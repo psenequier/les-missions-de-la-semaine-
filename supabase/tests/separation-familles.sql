@@ -44,6 +44,10 @@ select public.create_family('Famille A') as fa \gset
 insert into children (family_id, name, character) values (:'fa', 'Enfant A', 'pirate') returning id as ka \gset
 insert into events (family_id, child_id, points, label) values (:'fa', :'ka', 5, 'test');
 select invite_code as code from families where id = :'fa' \gset
+select test.refuse(format('insert into events (family_id, child_id, points, label) values (%L, %L, 5, %L)', :'fa', :'ka', 'test'), 'la même mission deux fois le même jour');
+insert into events (family_id, child_id, points, label) values (:'fa', :'ka', -3, 'Un achat'), (:'fa', :'ka', -3, 'Un achat');
+select test.egal((select count(*) from events where child_id = :'ka' and label = 'Un achat'), 2, 'les achats ne sont pas limités à un par jour');
+delete from events where child_id = :'ka' and label = 'Un achat';
 select test.egal((select count(*) from rewards where family_id = :'fa'), 3, 'une nouvelle famille reçoit le catalogue de départ');
 
 set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';

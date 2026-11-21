@@ -334,7 +334,11 @@
     if (S.busy) return false; S.busy = true;
     const { error } = await sb.from("events").insert({ family_id: S.family.id, child_id: childId, points, label: String(label).slice(0, 60) });
     S.busy = false;
-    if (error) { toast(OOPS); return false; }
+    if (error) {
+      if (/deja_fait/.test(error.message || "")) { toast("Déjà fait aujourd'hui ✓ Reviens demain !"); await fetchEvents(); render(); }
+      else toast(OOPS);
+      return false;
+    }
     await fetchEvents(); render(); return true;
   }
   async function removeEvent(id) {
@@ -378,6 +382,10 @@
     return `<div class="top"><div class="ident"><span class="avatar" aria-hidden="true">${c.icon}</span><h2 class="name">${esc(kid.name)}</h2></div>${right}</div>`;
   }
 
+  // Chaque mission rapporte des points une seule fois par jour et par enfant
+  // (la base le vérifie aussi, voir le déclencheur une_fois_par_jour dans schema.sql).
+  const doneToday = (kidId, label) => { const day = dayKey(); return S.events.some(e => e.child_id === kidId && e.label === label && e.points > 0 && dayKey(e.at) === day); };
+
   function renderPoints() {
     const st = settings();
     const buttons = [
@@ -390,18 +398,22 @@
       return `<article class="kid" style="${kidStyle(k)}">
         ${kidHead(k, `<div class="total"><b>${total(k.id)}</b><span>points</span></div>`)}
         <div><h3>Gagner des points</h3><div class="earn" style="margin-top:8px">
-          ${buttons.map(b => `<button class="btn-earn" data-earn="${k.id}|${b.key}"><span class="ico" aria-hidden="true">${esc(b.icon)}</span>${esc(b.label)}<span class="pts">+${b.pts}</span></button>`).join("")}
+          ${buttons.map(b => {
+            const fait = doneToday(k.id, b.label), routine = b.key.startsWith("r:");
+            const bas = fait ? "✓ fait aujourd'hui" : routine ? "Cocher mes missions →" : "+" + b.pts;
+            return `<button class="btn-earn ${fait ? "fait" : ""} ${routine && !fait ? "aller" : ""}" data-earn="${k.id}|${b.key}" ${fait ? "disabled" : ""}><span class="ico" aria-hidden="true">${esc(b.icon)}</span>${esc(b.label)}<span class="pts">${bas}</span></button>`;
+          }).join("")}
         </div></div>
         <div><h3>Derniers points</h3>${hist.length ? `<ul class="history" style="margin-top:8px">${hist.map(e => `<li><span>${esc(e.label)} <span class="when">${shortDate(e.at)}</span></span><span class="${e.points > 0 ? "plus" : "minus"}">${e.points > 0 ? "+" : ""}${e.points}</span></li>`).join("")}</ul>` : `<p class="hint" style="margin-top:8px">Pas encore de points. Appuie sur un bouton au-dessus !</p>`}</div>
         <button class="btn-undo" data-undo="${k.id}" ${hist.length ? "" : "disabled"}>↩︎ Annuler le dernier</button>
       </article>`;
     }).join("") : emptyKids();
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
-    $("#rules").innerHTML = `<b>Les règles :</b> ${buttons.map(b => `${esc(b.label.toLowerCase())} = <b>${b.pts} point${b.pts > 1 ? "s" : ""}</b>`).join(" · ")}`;
+    $("#rules").innerHTML = `<b>Les règles, une fois par jour :</b> ${buttons.map(b => `${esc(b.label.toLowerCase())} = <b>${b.pts} point${b.pts > 1 ? "s" : ""}</b>`).join(" · ")}`;
   }
 
   function renderTodo() {
-    const st = settings(), day = dayKey();
+    const st = settings();
     try { $("#today").textContent = "Aujourd'hui : " + new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }); } catch { /* sans effet */ }
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#todo-kids").innerHTML = S.children.length ? S.children.map(k => `<article class="kid" style="${kidStyle(k)}">
@@ -411,7 +423,7 @@
         const keyOf = i => part + ":" + i + ":" + items[i];
         const done = items.filter((_, i) => S.checks.has(k.id + "|" + keyOf(i))).length;
         const all = items.length > 0 && done === items.length;
-        const given = S.events.some(e => e.child_id === k.id && e.label === r.label && e.points > 0 && dayKey(e.at) === day);
+        const given = doneToday(k.id, r.label);
         return `<div class="block"><div class="block-h"><b>${esc(r.icon)} ${esc(r.label)}</b><span class="p">${r.points} points · ${done} / ${items.length} cases</span></div>
           ${items.map((lbl, i) => { const on = S.checks.has(k.id + "|" + keyOf(i));
             return `<button class="check ${on ? "done" : ""}" data-check="${k.id}" data-item="${esc(keyOf(i))}" aria-pressed="${on}"><span class="box">${on ? "✓" : ""}</span><span class="lbl">${esc(lbl)}</span></button>`; }).join("")}
@@ -687,6 +699,9 @@
       const [kid, key] = d.earn.split("|"), st = settings(); let item;
       if (key.startsWith("r:")) item = st.routines[key.slice(2)]; else item = st.tasks[Number(key.slice(2))];
       if (!item) return;
+      // Les missions du matin et du soir se gagnent en cochant les cases, sur la page des missions
+      if (key.startsWith("r:")) { location.hash = "#a-faire"; return; }
+      if (doneToday(kid, item.label)) return toast("Déjà fait aujourd'hui ✓ Reviens demain !");
       if (await addEvent(kid, item.points, item.label)) toast(`Bravo ${(kidById(kid) || {}).name} ! +${item.points} points`);
     } else if (d.undo) {
       const last = S.events.filter(x => x.child_id === d.undo).sort((x, y) => y.at - x.at)[0];
@@ -697,6 +712,7 @@
       toggleCheck(d.check, d.item);
     } else if (d.bonus) {
       const [kid, part] = d.bonus.split("|"), r = settings().routines[part];
+      if (doneToday(kid, r.label)) return toast("Déjà fait aujourd'hui ✓ Reviens demain !");
       if (await addEvent(kid, r.points, r.label)) toast(`Bravo ${(kidById(kid) || {}).name} ! +${r.points} points`);
     } else if (d.buy) {
       const [kid, rid] = d.buy.split("|"), key = "shop|" + kid + "|" + rid;
