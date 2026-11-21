@@ -43,7 +43,9 @@ await p.fill("#kid-name", "Enfant 1"); await p.click('[data-char="pirate"]'); aw
 await vue("#catalogue");
 verifier(await p.locator("#shop-items .item").count() === 3, "une nouvelle famille a le catalogue de départ (3 récompenses)");
 await vue("#admin");
-verifier(await p.inputValue("#rate") === "0.1143", "par défaut, 70 points valent 8 € (0,1143 € par point)");
+verifier(await p.inputValue("#rate") === "8", "par défaut, le budget maximum est de 8 € par semaine et par enfant");
+verifier((await p.textContent("#rate-info")).includes("70 points"), "le site calcule 70 points au maximum par semaine");
+verifier((await p.textContent("#rate-info")).includes("0,11"), "1 point vaut environ 0,11 €");
 await vue("#points");
 await p.click('[data-earn$="|t:0"]'); await attendre(300);
 verifier((await p.textContent(".kid .total b")).trim() === "2", "« Chambre rangée » donne 2 points");
