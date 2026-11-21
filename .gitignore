@@ -1,0 +1,6 @@
+node_modules/
+.env
+*.sarif
+semgrep.json
+gitleaks.json
+codeql-resultats/

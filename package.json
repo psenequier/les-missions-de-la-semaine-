@@ -1,0 +1,19 @@
+{
+  "name": "points-en-famille",
+  "private": true,
+  "description": "Outils de vérification du site (le site lui-même n'a pas besoin de npm).",
+  "scripts": {
+    "lint": "eslint --max-warnings 0 . && html-validate index.html",
+    "verifier": "npm run lint && node scripts/verifier-config.mjs",
+    "test:interface": "node tests/ui/interface.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.15.0",
+    "eslint-plugin-no-unsanitized": "4.1.5",
+    "eslint-plugin-security": "4.2.1",
+    "globals": "17.14.0",
+    "html-validate": "11.21.1",
+    "playwright": "1.63.0"
+  }
+}

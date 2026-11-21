@@ -1,0 +1,8 @@
+{
+  "extends": ["html-validate:recommended"],
+  "rules": {
+    "require-sri": ["error", { "target": "crossorigin" }],
+    "no-inline-style": "off",
+    "prefer-native-element": "off"
+  }
+}

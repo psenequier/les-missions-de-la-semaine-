@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#fff8ef">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Points">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icone-180.png">
+<title>Points en famille</title>
+<meta name="description" content="Le tableau de points de la famille : missions, récompenses et semaines.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E⭐%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- [html-validate-disable-next require-sri -- la feuille Google Fonts change selon le navigateur : pas d'empreinte possible] -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@500;700;800&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="head">
+    <div>
+      <h1 id="title">Points en famille</h1>
+      <p class="tagline" id="tagline">Gagne des points, regarde ta barre monter, et choisis ta récompense !</p>
+    </div>
+    <div class="who" id="who" hidden>
+      <span id="who-email"></span>
+      <select id="family-switch" aria-label="Changer de famille" hidden></select>
+      <button type="button" class="btn ghost small" id="salon-btn" aria-pressed="false" title="Garde l'écran allumé, pour une tablette posée dans le salon">📺 Mode salon</button>
+    <button type="button" class="btn ghost small" id="super-btn" hidden>🛡️ Super admin</button>
+    <button type="button" class="btn ghost small" id="logout">Se déconnecter</button>
+    </div>
+  </header>
+
+  <p class="status" id="status" hidden></p>
+
+  <!-- Connexion -->
+  <section class="card auth" id="auth" hidden>
+    <div class="auth-tabs" role="tablist">
+      <button type="button" class="auth-tab" id="tab-login" role="tab" aria-selected="true">Se connecter</button>
+      <button type="button" class="auth-tab" id="tab-signup" role="tab" aria-selected="false">Créer un compte</button>
+    </div>
+    <form id="auth-form" class="form" novalidate>
+      <label>Adresse e-mail<input id="auth-email" type="email" autocomplete="email" required></label>
+      <label>Mot de passe<input id="auth-password" type="password" autocomplete="current-password" minlength="8" required></label>
+      <p class="hint" id="auth-hint" hidden>Au moins 8 caractères.</p>
+      <p class="err" id="auth-err" hidden></p>
+      <p class="ok" id="auth-ok" hidden></p>
+      <button class="btn" type="submit" id="auth-submit">Se connecter</button>
+      <button class="link" type="button" id="auth-forgot">Mot de passe oublié ?</button>
+    </form>
+  </section>
+
+  <!-- Nouveau mot de passe (lien reçu par e-mail) -->
+  <section class="card auth" id="recover" hidden>
+    <h2 class="sec">Choisis un nouveau mot de passe</h2>
+    <form id="recover-form" class="form" novalidate>
+      <label>Nouveau mot de passe<input id="recover-password" type="password" autocomplete="new-password" minlength="8" required></label>
+      <p class="err" id="recover-err" hidden></p>
+      <button class="btn" type="submit">Enregistrer</button>
+    </form>
+  </section>
+
+  <!-- Première famille -->
+  <section class="onboard" id="onboard" hidden>
+    <div class="card">
+      <h2 class="sec">Créer ma famille</h2>
+      <p class="hint">Tu seras l'administrateur : tu ajoutes les enfants, les missions et les récompenses.</p>
+      <form id="create-form" class="form" novalidate>
+        <label>Nom de la famille<input id="create-name" type="text" maxlength="60" placeholder="Ex. : Famille Martin" required></label>
+        <p class="err" id="create-err" hidden></p>
+        <button class="btn" type="submit">Créer la famille</button>
+      </form>
+    </div>
+    <div class="card">
+      <h2 class="sec">Rejoindre une famille</h2>
+      <p class="hint">Un parent t'a donné un code d'invitation ? Écris-le ici.</p>
+      <form id="join-form" class="form" novalidate>
+        <label>Code d'invitation<input id="join-code" type="text" maxlength="12" autocomplete="off" placeholder="Ex. : 4F7A2C9B" required></label>
+        <p class="err" id="join-err" hidden></p>
+        <button class="btn" type="submit">Rejoindre</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Super admin : toutes les familles -->
+  <section class="card" id="super" hidden>
+    <h2 class="sec">🛡️ Super admin : toutes les familles</h2>
+    <p class="hint">Tu vois ici chaque famille du site. « Ouvrir » te fait entrer dans la famille avec les droits d'administrateur. Les familles, elles, restent séparées entre elles.</p>
+    <p class="err" id="super-err" hidden></p>
+    <div class="report-wrap"><table class="report" id="super-list"></table></div>
+    <div class="row"><button type="button" class="btn ghost" id="super-close">↩︎ Retour</button></div>
+  </section>
+
+  <p class="visit" id="visit" hidden><span id="visit-text"></span> <button type="button" class="link" id="visit-leave">Revenir à ma famille</button></p>
+
+  <!-- Application -->
+  <div id="app" class="app" hidden>
+    <nav class="tabs" aria-label="Pages">
+      <a href="#points" class="tab" data-view="points"><span class="ti" aria-hidden="true">⭐</span><span class="tl">Mes points</span><span class="ts">Points</span></a>
+      <a href="#a-faire" class="tab" data-view="todo"><span class="ti" aria-hidden="true">✅</span><span class="tl">À LA RECHERCHE DES POINTS</span><span class="ts">Missions</span></a>
+      <a href="#catalogue" class="tab" data-view="shop"><span class="ti" aria-hidden="true">🎁</span><span class="tl">Catalogue</span><span class="ts">Catalogue</span></a>
+      <a href="#semaines" class="tab" data-view="weeks"><span class="ti" aria-hidden="true">📅</span><span class="tl">Mes semaines</span><span class="ts">Semaines</span></a>
+      <a href="#admin" class="tab" data-view="admin" id="tab-admin" hidden><span class="ti" aria-hidden="true">⚙️</span><span class="tl">Administration</span><span class="ts">Admin</span></a>
+    </nav>
+
+    <section class="view" data-view="points">
+      <div class="kids" id="kids"></div>
+      <div class="rules" id="rules"></div>
+    </section>
+
+    <section class="view" data-view="todo" hidden>
+      <p class="today" id="today"></p>
+      <div class="kids" id="todo-kids"></div>
+    </section>
+
+    <section class="view shop" data-view="shop" hidden>
+      <div class="wallets" id="shop-wallets"></div>
+      <div class="items" id="shop-items"></div>
+      <div class="bought"><h3>Déjà achetés</h3><ul class="history" id="shop-history"></ul></div>
+    </section>
+
+    <section class="view wv" data-view="weeks" hidden>
+      <div><h2 class="sec">Cette semaine</h2><p class="sub" id="wk-range"></p></div>
+      <div class="kids" id="wk-now"></div>
+      <div class="w-legend"><span><i class="w-dot ok"></i> mission faite</span><span><i class="w-dot"></i> pas faite</span><span>1er rond = matin, 2e rond = soir</span></div>
+      <div class="w-panel"><h3>Points gagnés chaque semaine</h3><div class="w-chart" id="wk-chart"></div></div>
+      <div class="year-head"><h2 class="sec">Toute l'année</h2>
+        <div class="year-nav"><button type="button" class="btn-year" data-year="-1" aria-label="Année d'avant">◀</button><b id="year-lbl"></b><button type="button" class="btn-year" data-year="1" aria-label="Année d'après">▶</button></div></div>
+      <div class="w-panel" id="year"></div>
+      <div><h2 class="sec">Les semaines passées</h2><p class="sub">La plus récente en haut</p></div>
+      <div class="w-weeks" id="wk-past"></div>
+    </section>
+
+    <section class="view admin" data-view="admin" hidden>
+      <div class="card">
+        <h2 class="sec">Rapport de la semaine</h2>
+        <p class="hint" id="rp-range"></p>
+        <div class="report-wrap"><table class="report" id="report"></table></div>
+        <form id="rate-form" class="form inline" novalidate>
+          <label>Valeur d'un point en euros<input id="rate" type="number" min="0" max="100" step="0.01" inputmode="decimal"></label>
+          <button class="btn" type="submit">Enregistrer</button>
+        </form>
+        <p class="hint">Exemple : avec 0,10 € par point, 20 points valent 2 €.</p>
+      </div>
+      <div class="card">
+        <h2 class="sec">Ma famille</h2>
+        <form id="fam-form" class="form inline" novalidate>
+          <label>Nom de la famille<input id="fam-name" type="text" maxlength="60" required></label>
+          <button class="btn" type="submit">Enregistrer</button>
+        </form>
+        <div class="invite">
+          <div><h3>Code d'invitation</h3><p class="hint">Donne ce code à un autre adulte de la famille. Il crée son compte, puis choisit « Rejoindre une famille ».</p></div>
+          <div class="code-row"><code id="invite-code"></code><button type="button" class="btn ghost small" id="copy-code">Copier</button><button type="button" class="btn ghost small" id="new-code">Nouveau code</button></div>
+        </div>
+        <p class="hint" id="members"></p>
+      </div>
+
+      <div class="card">
+        <h2 class="sec">Les enfants</h2>
+        <div id="admin-kids" class="admin-kids"></div>
+        <form id="kid-form" class="form" novalidate>
+          <h3 id="kid-form-title">Ajouter un enfant</h3>
+          <div class="grid2">
+            <label>Prénom<input id="kid-name" type="text" maxlength="30" required></label>
+            <label>Objectif de la semaine (points)<input id="kid-goal" type="number" min="1" max="999" value="25" required></label>
+          </div>
+          <fieldset class="chars"><legend>Personnage</legend><div id="char-picker" class="char-picker"></div></fieldset>
+          <p class="err" id="kid-err" hidden></p>
+          <div class="row"><button class="btn" type="submit" id="kid-submit">Ajouter l'enfant</button><button class="btn ghost" type="button" id="kid-cancel" hidden>Annuler</button></div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2 class="sec">Les missions</h2>
+        <form id="missions-form" class="form" novalidate>
+          <div class="grid2">
+            <div class="routine">
+              <h3>🌅 Missions du matin</h3>
+              <label>Points quand tout est fait<input id="m-matin-pts" type="number" min="1" max="99" required></label>
+              <label>Une mission par ligne<textarea id="m-matin-items" rows="6"></textarea></label>
+            </div>
+            <div class="routine">
+              <h3>🌙 Missions du soir</h3>
+              <label>Points quand tout est fait<input id="m-soir-pts" type="number" min="1" max="99" required></label>
+              <label>Une mission par ligne<textarea id="m-soir-items" rows="6"></textarea></label>
+            </div>
+          </div>
+          <h3>Autres boutons pour gagner des points</h3>
+          <div id="task-rows" class="task-rows"></div>
+          <button class="btn ghost small" type="button" id="add-task">➕ Ajouter un bouton</button>
+          <p class="err" id="missions-err" hidden></p>
+          <button class="btn" type="submit">Enregistrer les missions</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2 class="sec">Les récompenses</h2>
+        <div id="admin-rewards" class="admin-rewards"></div>
+        <form id="reward-form" class="form" novalidate>
+          <h3>Ajouter une récompense</h3>
+          <div class="grid4">
+            <label>Nom<input id="rw-title" type="text" maxlength="40" placeholder="Ex. : Une glace" required></label>
+            <label>Points<input id="rw-cost" type="number" min="1" max="9999" required></label>
+            <label>Pour qui ?<select id="rw-for"></select></label>
+            <label>Image<select id="rw-icon"></select></label>
+          </div>
+          <p class="err" id="rw-err" hidden></p>
+          <button class="btn" type="submit">➕ Ajouter au catalogue</button>
+        </form>
+      </div>
+
+      <div class="card danger">
+        <h2 class="sec">Remettre les points à zéro</h2>
+        <p class="hint">Efface tous les points et tous les achats de la famille. Les enfants, missions et récompenses restent.</p>
+        <button type="button" class="btn danger-btn" id="reset-btn">Tout remettre à zéro</button>
+      </div>
+    </section>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
+<script src="config.js"></script>
+<script src="characters.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
