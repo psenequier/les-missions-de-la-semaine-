@@ -7,6 +7,6 @@ create function auth.uid() returns uuid language sql stable as $$ select nullif(
 grant usage on schema auth to anon, authenticated;
 grant execute on function auth.uid() to anon, authenticated;
 create publication supabase_realtime;
-alter default privileges in schema public grant all on tables to anon, authenticated;
-alter default privileges in schema public grant all on functions to anon, authenticated;
+-- Pas de droits par défaut sur les tables : les nouveaux projets Supabase n'en donnent plus,
+-- schema.sql doit donc les accorder lui-même (sinon « Impossible de lire tes familles »).
 grant usage on schema public to anon, authenticated;

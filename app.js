@@ -61,7 +61,7 @@
       routines: { matin: routine(r.matin, D.routines.matin), soir: routine(r.soir, D.routines.soir) },
       tasks: (Array.isArray(s.tasks) ? s.tasks : D.tasks).filter(t => t && typeof t === "object")
         .map(t => ({ label: txt(t.label, "?"), icon: txt(t.icon, "⭐"), points: pts(t.points, 1) })),
-      euroPerPoint: typeof s.euroPerPoint === "number" && s.euroPerPoint >= 0 && s.euroPerPoint <= 100 ? s.euroPerPoint : 0.1
+      euroPerPoint: typeof s.euroPerPoint === "number" && s.euroPerPoint >= 0 && s.euroPerPoint <= 100 ? s.euroPerPoint : 0.35
     };
   };
   const isAdmin = () => S.role === "admin";

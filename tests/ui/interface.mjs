@@ -40,6 +40,10 @@ await p.fill("#auth-email", "parent@exemple.test"); await p.fill("#auth-password
 verifier(await p.isVisible("#onboard"), "après connexion : créer ou rejoindre une famille");
 await p.fill("#create-name", "Famille Test"); await p.click("#create-form button"); await attendre(600);
 await p.fill("#kid-name", "Enfant 1"); await p.click('[data-char="pirate"]'); await p.click("#kid-submit"); await attendre(300);
+await vue("#catalogue");
+verifier(await p.locator("#shop-items .item").count() === 3, "une nouvelle famille a le catalogue de départ (3 récompenses)");
+await vue("#admin");
+verifier(await p.inputValue("#rate") === "0.35", "un point vaut 0,35 € par défaut");
 await vue("#points");
 await p.click('[data-earn$="|r:soir"]'); await attendre(300);
 verifier((await p.textContent(".kid .total b")).trim() === "3", "les missions du soir donnent 3 points");

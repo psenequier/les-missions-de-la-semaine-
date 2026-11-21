@@ -44,6 +44,7 @@ select public.create_family('Famille A') as fa \gset
 insert into children (family_id, name, character) values (:'fa', 'Enfant A', 'pirate') returning id as ka \gset
 insert into events (family_id, child_id, points, label) values (:'fa', :'ka', 5, 'test');
 select invite_code as code from families where id = :'fa' \gset
+select test.egal((select count(*) from rewards where family_id = :'fa'), 3, 'une nouvelle famille reçoit le catalogue de départ');
 
 set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
 select public.create_family('Famille B') as fb \gset
@@ -72,8 +73,8 @@ select test.egal((select public.is_super_admin()::int), 0, 'un parent n''est pas
 
 -- Visiteur non connecté
 reset role; set role anon; set request.jwt.claim.sub = '';
-select test.egal((select count(*) from events), 0, 'un visiteur ne voit aucun point');
-select test.egal((select count(*) from families), 0, 'un visiteur ne voit aucune famille');
+select test.refuse('select count(*) from events', 'un visiteur lit les points');
+select test.refuse('select count(*) from families', 'un visiteur lit les familles');
 select test.refuse(format('select public.join_family(%L)', :'code'), 'un visiteur rejoint une famille');
 select test.refuse('select public.all_families()', 'un visiteur liste toutes les familles');
 select test.refuse('select public.create_family(''x'')', 'un visiteur crée une famille');
@@ -98,6 +99,10 @@ select test.egal((select count(*) from events where family_id = :'fa'), 2, 'le s
 insert into children (family_id, name) values (:'fb', 'Ajout super admin');
 select test.egal((select count(*) from children where family_id = :'fb'), 2, 'le super admin gère la famille B');
 select test.refuse(format('insert into events (family_id, child_id, points, label) values (%L, %L, 1, %L)', :'fb', :'ka', 'x'), 'même le super admin ne mélange pas les enfants de deux familles');
+
+-- Un parent connecté peut lire sa famille avec l'API (droits accordés par schema.sql)
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select test.egal((select count(*) from family_members m join families f on f.id = m.family_id where m.user_id = auth.uid()), 1, 'le parent A lit sa famille et son rôle');
 
 -- Le parent B ne voit toujours que sa famille
 set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
