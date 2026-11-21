@@ -1,0 +1,14 @@
+# Règles par défaut de Gitleaks, plus les clés secrètes Supabase.
+# La clé « publishable » de config.js est publique par nature : elle n'est pas signalée.
+[extend]
+useDefault = true
+
+[[rules]]
+id = "supabase-secret-key"
+description = "Clé secrète Supabase (sb_secret_…)"
+regex = '''sb_secret_[A-Za-z0-9_-]{10,}'''
+keywords = ["sb_secret_"]
+
+[allowlist]
+description = "Clé publique Supabase du site"
+regexes = ['''sb_publishable_[A-Za-z0-9_-]+''']

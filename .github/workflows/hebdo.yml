@@ -1,0 +1,40 @@
+# Chaque lundi à 3 h (UTC) : scan ZAP actif du site servi dans la CI (jamais le site en ligne)
+# et audit des dépendances. Un échec est notifié par e-mail (réglage de notifications GitHub),
+# les détails restent dans l'onglet Actions.
+name: hebdo
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  zap-actif:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Servir le site sur la machine de la CI
+        run: python3 -m http.server 8000 --bind 0.0.0.0 > /dev/null 2>&1 &
+      - name: Scan ZAP actif, uniquement sur la copie de la CI
+        uses: zaproxy/action-full-scan@3c58388149901b9a03b7718852c5ba889646c27c # v0.13.0
+        with:
+          target: http://localhost:8000/index.html
+          rules_file_name: .zap/regles.tsv
+          fail_action: true
+          allow_issue_writing: false # dépôt public : pas de ticket public
+
+  audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with: { node-version: 22 }
+      - run: npm ci --ignore-scripts && npm audit --audit-level=high

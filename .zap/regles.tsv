@@ -1,0 +1,6 @@
+10020	IGNORE	(En-tête anti-clickjacking : GitHub Pages ne permet pas d'ajouter des en-têtes)
+10021	IGNORE	(X-Content-Type-Options : GitHub Pages l'envoie déjà ; le petit serveur de la CI non)
+10038	IGNORE	(CSP : posée par la balise meta de index.html, pas par un en-tête)
+10049	IGNORE	(Cache : sans objet pour des fichiers statiques publics)
+10109	IGNORE	(Information : application web moderne)
+90004	IGNORE	(Isolation Spectre : en-têtes impossibles sur GitHub Pages)
