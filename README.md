@@ -51,6 +51,7 @@ Chaque famille a ses propres données : la base refuse à une famille de lire ou
 | `characters.js` | le catalogue des personnages et leurs pouvoirs |
 | `config.js` | l'adresse et la clé publique Supabase |
 | `supabase/schema.sql` | tables et règles de séparation des familles |
+| `supabase/droits.sql` | ajoute les droits d'accès aux tables à une base déjà créée |
 | `supabase/super-admin.sql` | ajoute le super admin à une base déjà créée |
 | `supabase/tests/` | tests de séparation des familles (lancés par la CI) |
 | `tests/ui/` | test des écrans avec un faux Supabase et des textes piégés |

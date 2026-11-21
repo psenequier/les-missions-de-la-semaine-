@@ -212,4 +212,16 @@ create policy ck_insert on public.checks for insert to authenticated with check 
 create policy ck_delete on public.checks for delete to authenticated using (is_member(family_id));
 
 -- ───────────── Mises à jour en direct ─────────────
+-- ───────── Droits d'accès (voir aussi droits.sql pour une base déjà créée) ─────────
+grant usage on schema public to anon, authenticated;
+revoke all on public.families, public.family_members, public.children,
+              public.rewards, public.events, public.checks from anon;
+grant select, insert, update, delete on public.families       to authenticated;
+grant select, update, delete         on public.family_members to authenticated;
+grant select, insert, update, delete on public.children       to authenticated;
+grant select, insert, update, delete on public.rewards        to authenticated;
+grant select, insert, delete         on public.events         to authenticated;
+grant select, insert, delete         on public.checks         to authenticated;
+grant execute on function public.is_member(uuid), public.is_admin(uuid) to authenticated;
+
 alter publication supabase_realtime add table public.events, public.checks, public.children, public.rewards, public.families;
