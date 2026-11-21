@@ -56,6 +56,13 @@ await p.click('[data-bonus$="|soir"]'); await attendre(300);
 await vue("#points");
 verifier((await p.textContent(".kid .total b")).trim() === "5", "les missions du soir cochées donnent 3 points de plus");
 verifier(await p.isDisabled('[data-earn$="|r:soir"]'), "les missions du soir sont marquées « fait aujourd'hui » sur Mes points");
+await vue("#a-faire");
+await p.click('[data-unbonus$="|soir"]'); await attendre(200);
+verifier(await p.isVisible('[data-unbonus$="|soir"].confirm'), "annuler les missions du soir demande une confirmation");
+await p.click('[data-unbonus$="|soir"]'); await attendre(300);
+verifier(await p.isVisible('[data-bonus$="|soir"]'), "après annulation, le bouton pour prendre les points revient");
+await vue("#points");
+verifier((await p.textContent(".kid .total b")).trim() === "2", "annuler les missions du soir retire les 3 points");
 
 await p.click("#super-btn"); await attendre(400);
 verifier(await p.locator("#super-list tbody tr").count() === 2, "le super admin voit les 2 familles");
