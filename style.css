@@ -77,6 +77,8 @@ h3{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:v
 .btn-earn:active{transform:scale(.96)}
 .btn-earn .pts{font-family:var(--display);font-size:24px;color:var(--c);line-height:1}
 .btn-earn .ico{font-size:24px}
+.btn-earn.fait{opacity:.6;cursor:default}
+.btn-earn.fait .pts,.btn-earn.aller .pts{font-family:var(--body);font-size:14px;font-weight:800}
 .history{display:grid;gap:6px;font-size:14px;margin:0;padding:0;list-style:none}
 .history li{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed var(--line);padding-bottom:4px}
 .plus{color:var(--ok);font-weight:800}

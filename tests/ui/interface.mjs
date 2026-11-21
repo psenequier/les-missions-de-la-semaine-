@@ -45,8 +45,17 @@ verifier(await p.locator("#shop-items .item").count() === 3, "une nouvelle famil
 await vue("#admin");
 verifier(await p.inputValue("#rate") === "0.1143", "par défaut, 70 points valent 8 € (0,1143 € par point)");
 await vue("#points");
+await p.click('[data-earn$="|t:0"]'); await attendre(300);
+verifier((await p.textContent(".kid .total b")).trim() === "2", "« Chambre rangée » donne 2 points");
+verifier(await p.isDisabled('[data-earn$="|t:0"]'), "« Chambre rangée » ne se donne qu'une fois par jour");
 await p.click('[data-earn$="|r:soir"]'); await attendre(300);
-verifier((await p.textContent(".kid .total b")).trim() === "3", "les missions du soir donnent 3 points");
+verifier(await p.isVisible("#todo-kids"), "les missions du soir se gagnent sur la page des missions");
+const cases = await p.locator('.kid [data-item^="soir:"]').count();
+for (let i = 0; i < cases; i++) { await p.locator('.kid [data-item^="soir:"]:not(.done)').first().click(); await attendre(1200); }
+await p.click('[data-bonus$="|soir"]'); await attendre(300);
+await vue("#points");
+verifier((await p.textContent(".kid .total b")).trim() === "5", "les missions du soir cochées donnent 3 points de plus");
+verifier(await p.isDisabled('[data-earn$="|r:soir"]'), "les missions du soir sont marquées « fait aujourd'hui » sur Mes points");
 
 await p.click("#super-btn"); await attendre(400);
 verifier(await p.locator("#super-list tbody tr").count() === 2, "le super admin voit les 2 familles");

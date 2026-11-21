@@ -52,6 +52,7 @@ Chaque famille a ses propres données : la base refuse à une famille de lire ou
 | `config.js` | l'adresse et la clé publique Supabase |
 | `supabase/schema.sql` | tables et règles de séparation des familles |
 | `supabase/catalogue-depart.sql` | catalogue de départ des nouvelles familles, pour une base déjà créée |
+| `supabase/une-fois-par-jour.sql` | chaque mission ne rapporte des points qu'une fois par jour, pour une base déjà créée |
 | `supabase/droits.sql` | ajoute les droits d'accès aux tables à une base déjà créée |
 | `supabase/super-admin.sql` | ajoute le super admin à une base déjà créée |
 | `supabase/tests/` | tests de séparation des familles (lancés par la CI) |
