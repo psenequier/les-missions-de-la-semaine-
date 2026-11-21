@@ -19,6 +19,8 @@
   const reduceMotion = () => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch { return false; } };
   const OOPS = "Oups, ce n'est pas enregistré. Vérifie la connexion et réessaie.";
 
+  // Par défaut, 70 points (le maximum d'une semaine) valent 8 €.
+  const DEFAULT_EURO_PER_POINT = 8 / 70;
   const DEFAULT_SETTINGS = {
     routines: {
       matin: { label: "Missions du matin", icon: "🌅", points: 2, items: ["M'habiller", "Faire mes tartines", "Débarrasser", "Me brosser les dents", "Prendre mon cartable"] },
@@ -61,7 +63,7 @@
       routines: { matin: routine(r.matin, D.routines.matin), soir: routine(r.soir, D.routines.soir) },
       tasks: (Array.isArray(s.tasks) ? s.tasks : D.tasks).filter(t => t && typeof t === "object")
         .map(t => ({ label: txt(t.label, "?"), icon: txt(t.icon, "⭐"), points: pts(t.points, 1) })),
-      euroPerPoint: typeof s.euroPerPoint === "number" && s.euroPerPoint >= 0 && s.euroPerPoint <= 100 ? s.euroPerPoint : 0.35
+      euroPerPoint: typeof s.euroPerPoint === "number" && s.euroPerPoint >= 0 && s.euroPerPoint <= 100 ? s.euroPerPoint : DEFAULT_EURO_PER_POINT
     };
   };
   const isAdmin = () => S.role === "admin";
@@ -543,7 +545,7 @@
     e.preventDefault();
     const v = Number(String($("#rate").value).replace(",", "."));
     if (!(v >= 0 && v <= 100)) return toast("Mets une valeur entre 0 et 100 €.");
-    const next = Object.assign({}, S.family.settings || {}, { euroPerPoint: Math.round(v * 100) / 100 });
+    const next = Object.assign({}, S.family.settings || {}, { euroPerPoint: Math.round(v * 10000) / 10000 });
     const { error } = await sb.from("families").update({ settings: next }).eq("id", S.family.id);
     if (error) return toast(OOPS);
     S.family.settings = next; render(); toast("Valeur du point enregistrée ✓");
@@ -570,7 +572,7 @@
   function fillAdminForms() {
     const st = settings();
     $("#fam-name").value = S.family.name;
-    $("#rate").value = settings().euroPerPoint;
+    $("#rate").value = Math.round(settings().euroPerPoint * 10000) / 10000;
     ["matin", "soir"].forEach(p => { $("#m-" + p + "-pts").value = st.routines[p].points; $("#m-" + p + "-items").value = (st.routines[p].items || []).join("\n"); });
     $("#task-rows").innerHTML = ""; st.tasks.forEach(t => addTaskRow(t));
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site

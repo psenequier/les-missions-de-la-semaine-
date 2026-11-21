@@ -30,7 +30,7 @@ Chaque famille a ses propres données : la base refuse à une famille de lire ou
 
 1. Créer un compte (e-mail et mot de passe), puis confirmer l'adresse avec le lien reçu.
 2. Créer sa famille : on en devient l'administrateur.
-3. Dans **⚙️ Administration** : ajouter les enfants et leur personnage, régler les missions, les points, les récompenses et la valeur d'un point en euros (0,35 € par défaut).
+3. Dans **⚙️ Administration** : ajouter les enfants et leur personnage, régler les missions, les points, les récompenses et la valeur d'un point en euros (par défaut 70 points = 8 €, soit 0,1143 € par point).
 4. Un autre adulte peut rejoindre la famille avec le **code d'invitation** affiché dans l'administration.
 
 ## Sur téléphone et tablette
