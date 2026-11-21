@@ -85,6 +85,8 @@ h3{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:v
 .minus{color:var(--bad);font-weight:800}
 .when{color:var(--soft);font-size:12px}
 .btn-undo{background:transparent;color:var(--soft);border:2px solid var(--line);border-radius:99px;padding:6px 14px;font-weight:700;font-size:14px;justify-self:start}
+.btn-undo.confirm{background:#8a1c1c;color:#fff;border-color:#8a1c1c}
+.block .btn-undo{margin-top:6px}
 .rules{background:var(--card);border:2px dashed var(--line);border-radius:20px;padding:14px 18px;font-size:15px;color:var(--soft)}
 .rules b{color:var(--ink)}
 .empty{background:var(--card);border:2px dashed var(--line);border-radius:20px;padding:24px;text-align:center;color:var(--soft);font-weight:700}

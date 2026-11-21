@@ -427,7 +427,8 @@
         return `<div class="block"><div class="block-h"><b>${esc(r.icon)} ${esc(r.label)}</b><span class="p">${r.points} points · ${done} / ${items.length} cases</span></div>
           ${items.map((lbl, i) => { const on = S.checks.has(k.id + "|" + keyOf(i));
             return `<button class="check ${on ? "done" : ""}" data-check="${k.id}" data-item="${esc(keyOf(i))}" aria-pressed="${on}"><span class="box">${on ? "✓" : ""}</span><span class="lbl">${esc(lbl)}</span></button>`; }).join("")}
-          ${given ? `<p class="given">+${r.points} points gagnés ce ${part === "matin" ? "matin" : "soir"} ! 🎉</p>`
+          ${given ? `<p class="given">+${r.points} points gagnés ce ${part === "matin" ? "matin" : "soir"} ! 🎉</p>${(() => { const ck = "unbonus|" + k.id + "|" + part, conf = S.confirmKey === ck;
+              return `<button class="btn-undo ${conf ? "confirm" : ""}" data-unbonus="${k.id}|${part}">${conf ? "Sûr ? Touche encore pour annuler" : `↩︎ Annuler ces ${r.points} points`}</button>`; })()}`
             : `<button class="btn-bonus" data-bonus="${k.id}|${part}" ${all ? "" : "disabled"}>${all ? `Tout est fait ! Prendre mes ${r.points} points` : `Encore ${items.length - done} à faire`}</button>`}
         </div>`;
       }).join("")}
@@ -714,6 +715,14 @@
       const [kid, part] = d.bonus.split("|"), r = settings().routines[part];
       if (doneToday(kid, r.label)) return toast("Déjà fait aujourd'hui ✓ Reviens demain !");
       if (await addEvent(kid, r.points, r.label)) toast(`Bravo ${(kidById(kid) || {}).name} ! +${r.points} points`);
+    } else if (d.unbonus) {
+      const [kid, part] = d.unbonus.split("|"), r = settings().routines[part], key = "unbonus|" + kid + "|" + part;
+      if (!r) return;
+      if (S.confirmKey !== key) return armConfirm(key);
+      S.confirmKey = null; clearTimeout(S.confirmTimer);
+      const day = dayKey();
+      const ev = S.events.filter(x => x.child_id === kid && x.label === r.label && x.points > 0 && dayKey(x.at) === day).sort((x, y) => y.at - x.at)[0];
+      if (ev) removeEvent(ev.id); else render();
     } else if (d.buy) {
       const [kid, rid] = d.buy.split("|"), key = "shop|" + kid + "|" + rid;
       if (S.confirmKey !== key) return armConfirm(key);
