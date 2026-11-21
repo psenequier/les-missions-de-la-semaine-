@@ -43,7 +43,7 @@ await p.fill("#kid-name", "Enfant 1"); await p.click('[data-char="pirate"]'); aw
 await vue("#catalogue");
 verifier(await p.locator("#shop-items .item").count() === 3, "une nouvelle famille a le catalogue de départ (3 récompenses)");
 await vue("#admin");
-verifier(await p.inputValue("#rate") === "0.35", "un point vaut 0,35 € par défaut");
+verifier(await p.inputValue("#rate") === "0.1143", "par défaut, 70 points valent 8 € (0,1143 € par point)");
 await vue("#points");
 await p.click('[data-earn$="|r:soir"]'); await attendre(300);
 verifier((await p.textContent(".kid .total b")).trim() === "3", "les missions du soir donnent 3 points");
