@@ -90,22 +90,20 @@ jobs:
       - run: npm run test:interface
 
   sast:
+    # Dépôt public : résultats publiés dans l'onglet Security. Dépôt privé (pas de Code scanning
+    # sans GitHub Advanced Security) : mêmes analyses, résultats en annotations, et le job bloque.
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
       contents: read
+      actions: read
       security-events: write
+    env:
+      PUBLIC: ${{ github.event.repository.private == false }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: CodeQL, préparation
-        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
-        with:
-          languages: javascript-typescript, actions
-          queries: security-extended
-      - name: CodeQL, analyse (injections, XSS, workflows)
-        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
       - name: Semgrep, règles OWASP Top 10, JavaScript et secrets
         run: |
           pipx install semgrep==1.186.0
@@ -115,7 +113,22 @@ jobs:
             python3 -c "import json;[print(f\"::error file={r['path']},line={r['start']['line']},title=Semgrep::{r['check_id'].split('.')[-1]}\") for r in json.load(open('semgrep.json'))['results']]"
             exit 1
           }
-      - if: always()
+      - name: CodeQL, préparation
+        if: always()
+        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          languages: javascript-typescript, actions
+          queries: security-extended
+      - name: CodeQL, analyse (injections, XSS, workflows)
+        if: always()
+        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          output: codeql-resultats
+          upload: ${{ env.PUBLIC == 'true' && 'always' || 'never' }}
+      - name: CodeQL, aucune faille de niveau « erreur »
+        if: always()
+        run: python3 scripts/sarif-bloquant.py codeql-resultats
+      - if: always() && env.PUBLIC == 'true' && hashFiles('semgrep.sarif') != ''
         uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           sarif_file: semgrep.sarif
