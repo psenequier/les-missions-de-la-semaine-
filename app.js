@@ -19,8 +19,8 @@
   const reduceMotion = () => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch { return false; } };
   const OOPS = "Oups, ce n'est pas enregistré. Vérifie la connexion et réessaie.";
 
-  // Par défaut, 70 points (le maximum d'une semaine) valent 8 €.
-  const DEFAULT_EURO_PER_POINT = 8 / 70;
+  // Par défaut, un enfant peut gagner au maximum 8 € par semaine s'il fait toutes ses missions.
+  const DEFAULT_WEEKLY_BUDGET = 8;
   const DEFAULT_SETTINGS = {
     routines: {
       matin: { label: "Missions du matin", icon: "🌅", points: 2, items: ["M'habiller", "Faire mes tartines", "Débarrasser", "Me brosser les dents", "Prendre mon cartable"] },
@@ -59,12 +59,16 @@
   const settings = () => {
     const s = (S.family && S.family.settings) || {};
     const r = s.routines || {}, D = DEFAULT_SETTINGS;
-    return {
-      routines: { matin: routine(r.matin, D.routines.matin), soir: routine(r.soir, D.routines.soir) },
-      tasks: (Array.isArray(s.tasks) ? s.tasks : D.tasks).filter(t => t && typeof t === "object")
-        .map(t => ({ label: txt(t.label, "?"), icon: txt(t.icon, "⭐"), points: pts(t.points, 1) })),
-      euroPerPoint: typeof s.euroPerPoint === "number" && s.euroPerPoint >= 0 && s.euroPerPoint <= 100 ? s.euroPerPoint : DEFAULT_EURO_PER_POINT
-    };
+    const routines = { matin: routine(r.matin, D.routines.matin), soir: routine(r.soir, D.routines.soir) };
+    const tasks = (Array.isArray(s.tasks) ? s.tasks : D.tasks).filter(t => t && typeof t === "object")
+      .map(t => ({ label: txt(t.label, "?"), icon: txt(t.icon, "⭐"), points: pts(t.points, 1) }));
+    // Chaque mission rapporte des points une fois par jour : le maximum d'une semaine, c'est 7 jours de toutes les missions.
+    const maxWeek = 7 * (routines.matin.points + routines.soir.points + tasks.reduce((a, t) => a + t.points, 0));
+    const okNum = (v, max) => typeof v === "number" && v >= 0 && v <= max;
+    // Ancien réglage (valeur d'un point) : on le convertit en budget pour ne rien changer aux familles existantes.
+    const weeklyBudget = okNum(s.weeklyBudget, 1000) ? s.weeklyBudget
+      : okNum(s.euroPerPoint, 100) ? Math.round(s.euroPerPoint * maxWeek * 100) / 100 : DEFAULT_WEEKLY_BUDGET;
+    return { routines, tasks, maxWeek, weeklyBudget, euroPerPoint: maxWeek > 0 ? weeklyBudget / maxWeek : 0 };
   };
   const isAdmin = () => S.role === "admin";
   const kidById = id => S.children.find(k => k.id === id);
@@ -541,7 +545,11 @@
   // ───── Administration ─────
   const euro = n => { try { return n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" }); } catch { return n.toFixed(2) + " €"; } };
   function renderReport() {
-    const rate = settings().euroPerPoint, mon = monday(Date.now()), end = addDays(mon, 7);
+    const st = settings();
+    $("#rate-info").textContent = st.maxWeek > 0
+      ? `Soit ${st.maxWeek} points au maximum par semaine et par enfant : 1 point vaut environ ${euro(st.euroPerPoint)}.`
+      : "Ajoute des missions pour calculer la valeur d'un point.";
+    const rate = st.euroPerPoint, mon = monday(Date.now()), end = addDays(mon, 7);
     $("#rp-range").textContent = `Du ${shortDate(mon)} au ${shortDate(addDays(mon, 6))}`;
     const rows = S.children.map(k => {
       const wk = S.events.filter(e => e.child_id === k.id && e.at >= mon && e.at < end);
@@ -557,11 +565,12 @@
   $("#rate-form").addEventListener("submit", async e => {
     e.preventDefault();
     const v = Number(String($("#rate").value).replace(",", "."));
-    if (!(v >= 0 && v <= 100)) return toast("Mets une valeur entre 0 et 100 €.");
-    const next = Object.assign({}, S.family.settings || {}, { euroPerPoint: Math.round(v * 10000) / 10000 });
+    if (!(v >= 0 && v <= 1000)) return toast("Mets une somme entre 0 et 1000 €.");
+    const next = Object.assign({}, S.family.settings || {}, { weeklyBudget: Math.round(v * 100) / 100 });
+    delete next.euroPerPoint;
     const { error } = await sb.from("families").update({ settings: next }).eq("id", S.family.id);
     if (error) return toast(OOPS);
-    S.family.settings = next; render(); toast("Valeur du point enregistrée ✓");
+    S.family.settings = next; render(); toast("Budget de la semaine enregistré ✓");
   });
   function renderAdminLists() {
     renderReport();
@@ -585,7 +594,7 @@
   function fillAdminForms() {
     const st = settings();
     $("#fam-name").value = S.family.name;
-    $("#rate").value = Math.round(settings().euroPerPoint * 10000) / 10000;
+    $("#rate").value = st.weeklyBudget;
     ["matin", "soir"].forEach(p => { $("#m-" + p + "-pts").value = st.routines[p].points; $("#m-" + p + "-items").value = (st.routines[p].items || []).join("\n"); });
     $("#task-rows").innerHTML = ""; st.tasks.forEach(t => addTaskRow(t));
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
@@ -666,7 +675,8 @@
       if (!(pts >= 1 && pts <= 99)) return msg("#missions-err", `Les points de « ${label} » doivent être entre 1 et 99.`);
       tasks.push({ label, icon: row.querySelector(".t-icon").value, points: pts });
     }
-    const next = { routines, tasks, euroPerPoint: cur.euroPerPoint };
+    // Le budget de la semaine reste le même : la valeur d'un point s'ajuste aux nouvelles missions.
+    const next = { routines, tasks, weeklyBudget: cur.weeklyBudget };
     const { error } = await sb.from("families").update({ settings: next }).eq("id", S.family.id);
     if (error) return msg("#missions-err", OOPS);
     S.family.settings = next; render(); toast("Missions enregistrées ✓");

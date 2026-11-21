@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- [html-validate-disable-next require-sri -- la feuille Google Fonts change selon le navigateur : pas d'empreinte possible] -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@500;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=2026-11-21a">
+<link rel="stylesheet" href="style.css?v=2026-11-21b">
 </head>
 <body>
 <div class="wrap">
@@ -141,10 +141,11 @@
         <p class="hint" id="rp-range"></p>
         <div class="report-wrap"><table class="report" id="report"></table></div>
         <form id="rate-form" class="form inline" novalidate>
-          <label>Valeur d'un point en euros<input id="rate" type="number" min="0" max="100" step="0.0001" inputmode="decimal"></label>
+          <label>Budget maximum par semaine par enfant (€)<input id="rate" type="number" min="0" max="1000" step="0.5" inputmode="decimal"></label>
           <button class="btn" type="submit">Enregistrer</button>
         </form>
-        <p class="hint">Par défaut, 70 points (le maximum d'une semaine) valent 8 €, soit environ 0,1143 € par point. Exemple : 20 points valent 2,29 €.</p>
+        <p class="hint">Indique la somme maximale qu'un enfant peut gagner en une semaine s'il fait toutes ses missions. La valeur d'un point est calculée automatiquement, et elle s'ajuste si tu ajoutes ou retires des missions. Par défaut : 8 € par semaine.</p>
+        <p class="hint" id="rate-info"></p>
       </div>
       <div class="card">
         <h2 class="sec">Ma famille</h2>
@@ -224,8 +225,8 @@
 <div class="toast" id="toast" hidden></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
-<script src="config.js?v=2026-11-21a"></script>
-<script src="characters.js?v=2026-11-21a"></script>
-<script src="app.js?v=2026-11-21a"></script>
+<script src="config.js?v=2026-11-21b"></script>
+<script src="characters.js?v=2026-11-21b"></script>
+<script src="app.js?v=2026-11-21b"></script>
 </body>
 </html>
