@@ -51,7 +51,8 @@ create table public.rewards (
   family_id  uuid not null references public.families(id) on delete cascade,
   title      text not null check (char_length(title) between 1 and 40),
   icon       text not null default '🎁',
-  cost       int  not null check (cost between 1 and 9999),
+  cost       int  not null check (cost between 1 and 9999),  -- points au moment de la création
+  price_eur  numeric(7,2) check (price_eur is null or (price_eur > 0 and price_eur <= 1000)),  -- prix en euros : le site en déduit les points
   child_ids  uuid[],            -- null = pour tous les enfants
   created_at timestamptz not null default now()
 );
@@ -155,14 +156,14 @@ begin
    order by f.created_at
    limit 1;
   if modele is not null and exists (select 1 from rewards where family_id = modele) then
-    insert into rewards (family_id, title, icon, cost)
-      select fid, title, icon, cost from rewards where family_id = modele order by cost, created_at;
+    insert into rewards (family_id, title, icon, cost, price_eur)
+      select fid, title, icon, cost, price_eur from rewards where family_id = modele order by cost, created_at;
   else
-    -- Sans modèle : catalogue fixe, au prix réel avec 1 point ≈ 0,08 €
-    insert into rewards (family_id, title, icon, cost) values
-      (fid, 'Un Legami',      '🖍️', 24),
-      (fid, 'Un livre',       '📘', 88),
-      (fid, 'Un grand livre', '📕', 159);
+    -- Sans modèle : catalogue fixe, au prix réel (1 point ≈ 0,08 € avec le budget par défaut)
+    insert into rewards (family_id, title, icon, cost, price_eur) values
+      (fid, 'Un Legami',      '🖍️', 24,  1.95),
+      (fid, 'Un livre',       '📘', 88,  7.20),
+      (fid, 'Un grand livre', '📕', 159, 13.00);
   end if;
   return fid;
 end $$;

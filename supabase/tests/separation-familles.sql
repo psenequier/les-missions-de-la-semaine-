@@ -156,6 +156,7 @@ select test.egal((select count(*) from events where id = :'ev_vieux'), 0, 'suppr
 set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';
 select public.create_family('Famille du super admin') as fm \gset
 select test.egal((select count(*) from rewards where family_id = :'fm'), 3, 'sans famille modèle, le catalogue fixe est donné');
+select test.egal((select count(*) from rewards where family_id = :'fm' and price_eur is not null), 3, 'le catalogue fixe a ses prix en euros');
 delete from rewards where family_id = :'fm';
 insert into children (family_id, name) values (:'fm', 'Enfant modèle') returning id as km \gset
 insert into rewards (family_id, title, icon, cost, child_ids) values

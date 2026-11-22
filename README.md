@@ -30,7 +30,7 @@ Chaque famille a ses propres données : la base refuse à une famille de lire ou
 
 1. Créer un compte (e-mail et mot de passe). Si « Confirm email » est activé dans Supabase, confirmer l'adresse avec le lien reçu (l'offre gratuite de Supabase n'envoie que quelques e-mails par heure).
 2. Créer sa famille : on en devient l'administrateur. Elle reçoit au départ une copie des récompenses de la famille du super admin.
-3. Dans **⚙️ Administration** : ajouter les enfants et leur personnage, régler les missions et leur poids (le site répartit environ 100 points par semaine et par enfant), le budget maximum par semaine et par enfant (8 € par défaut), et les récompenses : on donne leur prix en euros, le site le change en points avec la valeur d'un point.
+3. Dans **⚙️ Administration** : ajouter les enfants et leur personnage, régler les missions et leur poids (le site répartit environ 100 points par semaine et par enfant), le budget maximum par semaine et par enfant (8 € par défaut), et les récompenses : on donne leur prix en euros, le site le change en points avec la valeur d'un point. Si le budget ou les missions changent, les points des récompenses suivent (les achats déjà faits ne changent pas).
 4. Un autre adulte peut rejoindre la famille avec le **code d'invitation** affiché dans l'administration (il entre comme simple membre).
 5. Un adulte peut **quitter** la famille ; un administrateur peut la **supprimer**. Sans famille, on revient au choix « Créer » ou « Rejoindre ».
 
@@ -71,6 +71,7 @@ Un bouton « 💛 Soutenir le site » apparaît alors dans l'onglet Administrati
 | `config.js` | l'adresse et la clé publique Supabase, et le lien Ko-fi (facultatif) |
 | `supabase/schema.sql` | tables et règles de séparation des familles |
 | `supabase/catalogue-depart.sql` | catalogue de départ des nouvelles familles (copie des récompenses de la famille du super admin), pour une base déjà créée |
+| `supabase/prix-en-euros.sql` | prix des récompenses en euros (leurs points suivent le budget), pour une base déjà créée |
 | `supabase/quitter-famille.sql` | quitter ou supprimer une famille, pour une base déjà créée |
 | `supabase/une-fois-par-jour.sql` | chaque mission ne rapporte des points qu'une fois par jour, pour une base déjà créée |
 | `supabase/semaines-terminees.sql` | les points des semaines terminées ne changent plus, pour une base déjà créée |

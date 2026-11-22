@@ -51,7 +51,13 @@ await p.fill("#rw-title", "Une glace"); await p.fill("#rw-price", "3"); await at
 verifier((await p.textContent("#rw-points")).includes("37 points"), "une récompense à 3 € vaut 37 points (3 € ÷ 0,08 €)");
 await p.click("#reward-form button[type=submit]"); await attendre(400);
 verifier(await p.evaluate(() => window.__db.rewards.some(r => r.title === "Une glace" && r.cost === 37)), "la récompense est enregistrée à 37 points");
-verifier((await p.textContent("#admin-rewards")).includes("37 points (≈ 3,02"), "la liste montre les points et leur valeur en euros");
+verifier((await p.textContent("#admin-rewards")).includes("37 points (≈ 3,00"), "la liste montre les points et leur prix en euros");
+await p.fill("#rate", "16"); await p.click("#rate-form button[type=submit]"); await attendre(400);
+verifier((await p.textContent("#admin-rewards")).includes("18 points (≈ 3,00"), "budget doublé : la glace à 3 € passe à 18 points");
+await vue("#catalogue");
+verifier((await p.textContent("#shop-items")).includes("18 points"), "le catalogue des enfants suit le nouveau prix en points");
+await vue("#admin");
+await p.fill("#rate", "8"); await p.click("#rate-form button[type=submit]"); await attendre(400);
 await vue("#points");
 await p.click('[data-earn$="|t:0"]'); await attendre(300);
 verifier((await p.textContent(".kid .total b")).trim() === "3", "« Chambre rangée » (poids 2) donne 3 points");
