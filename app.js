@@ -308,6 +308,8 @@
     const { data, error } = await sb.from("children").select("*").eq("family_id", S.family.id).order("position").order("created_at");
     if (error) throw error; S.children = data;
   }
+  // Une semaine finie (avant lundi) est fermée : ses points ne changent plus (voir semaines-terminees.sql).
+  const weekClosed = ms => ms < monday(Date.now()).getTime();
   async function fetchRewards() {
     const { data, error } = await sb.from("rewards").select("*").eq("family_id", S.family.id).order("cost").order("created_at");
     if (error) throw error; S.rewards = data;
@@ -368,7 +370,10 @@
     if (S.busy) return; S.busy = true;
     const { error } = await sb.from("events").delete().eq("id", id);
     S.busy = false;
-    if (error) return toast(OOPS);
+    if (error) {
+      if (!/semaine_terminee/.test(error.message || "")) return toast(OOPS);
+      toast(t("Cette semaine est terminée 🔒 Ses points ne changent plus.")); await fetchEvents(); return render();
+    }
     await fetchEvents(); render(); toast(t("Annulé"));
   }
   async function toggleCheck(childId, item) {
@@ -417,7 +422,7 @@
     ];
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#kids").innerHTML = S.children.length ? S.children.map(k => {
-      const hist = S.events.filter(e => e.child_id === k.id).sort((a, b) => b.at - a.at).slice(0, 5);
+      const hist = S.events.filter(e => e.child_id === k.id).sort((a, b) => b.at - a.at).slice(0, 5), locked = hist.length && weekClosed(hist[0].at);
       return `<article class="kid" style="${kidStyle(k)}">
         ${kidHead(k, `<div class="total"><b>${total(k.id)}</b><span>${t("points")}</span></div>`)}
         <div><h3>${t("Gagner des points")}</h3><div class="earn" style="margin-top:8px">
@@ -428,7 +433,7 @@
           }).join("")}
         </div></div>
         <div><h3>${t("Derniers points")}</h3>${hist.length ? `<ul class="history" style="margin-top:8px">${hist.map(e => `<li><span>${esc(shown(e.label))} <span class="when">${shortDate(e.at)}</span></span><span class="${e.points > 0 ? "plus" : "minus"}">${e.points > 0 ? "+" : ""}${e.points}</span></li>`).join("")}</ul>` : `<p class="hint" style="margin-top:8px">${t("Pas encore de points. Appuie sur un bouton au-dessus !")}</p>`}</div>
-        <button class="btn-undo" data-undo="${k.id}" ${hist.length ? "" : "disabled"}>${t("↩︎ Annuler le dernier")}</button>
+        <button class="btn-undo" data-undo="${k.id}" ${hist.length && !locked ? "" : "disabled"}>${locked ? t("🔒 Semaine terminée, plus rien à annuler") : t("↩︎ Annuler le dernier")}</button>
       </article>`;
     }).join("") : emptyKids();
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
@@ -496,15 +501,14 @@
     $("#wk-range").textContent = t("Du {from} au {to}", { from: shortDate(mon), to: shortDate(addDays(mon, 6)) });
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#wk-now").innerHTML = S.children.length ? S.children.map(k => {
-      const goal = k.weekly_goal || 25, tot = weekTotal(st, k.id, mon), pct = Math.min(100, Math.round(tot / goal * 100));
+      const tot = weekTotal(st, k.id, mon);
       let done = 0, poss = 0, best = 0;
       const days = DAYN.map((n, i) => { const dk = dayKey(addDays(mon, i)), fut = dk > todayK, p = st.earned[k.id][dk] || 0, m = st.miss[k.id][dk] || {};
         if (!fut) { poss += 2; done += (m.m ? 1 : 0) + (m.s ? 1 : 0); best = Math.max(best, p); }
         return `<div class="w-day ${dk === todayK ? "today" : ""} ${fut ? "future" : ""}">${n}<div class="w-dots"><i class="w-dot ${m.m ? "ok" : ""}"></i><i class="w-dot ${m.s ? "ok" : ""}"></i></div><span class="w-pts">${fut ? "·" : p ? "+" + p : "0"}</span></div>`; }).join("");
       const b = st.buys[k.id][dayKey(mon)];
       return `<article class="kid" style="${kidStyle(k)}">
-        ${kidHead(k, `<div class="w-goal"><b>${tot} / ${goal}</b>${t("cette semaine")}</div>`)}
-        <div><div class="w-bar"><i style="width:${pct}%"></i></div><div class="w-barlbl"><span>${tot >= goal ? t("Objectif atteint ! 🎉") : t("Encore {n} points", { n: goal - tot })}</span><span>${pct} %</span></div></div>
+        ${kidHead(k, `<div class="w-goal"><b>${tot}</b>${t("points cette semaine")}</div>`)}
         <div class="w-days">${days}</div>
         <div class="w-stats"><div class="w-stat"><b>${done}/${poss}</b><span>${t("missions faites")}</span></div><div class="w-stat"><b>${best}</b><span>${t("meilleur jour")}</span></div><div class="w-stat"><b>${b ? esc(b.map(shown).join(", ")) : "—"}</b><span>${t("acheté")}</span></div></div>
       </article>`;
@@ -528,10 +532,10 @@
 
     const past = weeks.slice(0, -1).reverse();
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
-    $("#wk-past").innerHTML = past.length && kids.length ? past.map(w => `<article class="w-week"><div class="w-when">${t("Semaine")}<small>${shortDate(w)} – ${shortDate(addDays(w, 6))}</small></div><div class="w-week-kids">
-      ${kids.map(k => { const goal = k.weekly_goal || 25, p = weekTotal(st, k.id, w), ok = p >= goal, b = st.buys[k.id][dayKey(w)];
-        return `<div class="w-wk" style="${kidStyle(k)}"><div class="w-row"><span class="w-n">${esc(k.name)}</span><span>${p} pts <span class="pill ${ok ? "yes" : "no"}">${ok ? t("objectif ✓") : t("pas atteint")}</span></span></div>
-        <div class="w-bar"><i style="width:${Math.min(100, p / goal * 100)}%"></i></div><span class="w-note">${b ? "🎁 " + esc(b.map(shown).join(", ")) : t("Rien acheté")}</span></div>`; }).join("")}</div></article>`).join("")
+    $("#wk-past").innerHTML = past.length && kids.length ? past.map(w => `<article class="w-week"><div class="w-when">${t("Semaine")} <span title="${t("Semaine terminée : ses points ne changent plus")}">🔒</span><small>${shortDate(w)} – ${shortDate(addDays(w, 6))}</small></div><div class="w-week-kids">
+      ${kids.map(k => { const p = weekTotal(st, k.id, w), b = st.buys[k.id][dayKey(w)];
+        return `<div class="w-wk" style="${kidStyle(k)}"><div class="w-row"><span class="w-n">${esc(k.name)}</span><span>${p} pts</span></div>
+        <span class="w-note">${b ? "🎁 " + esc(b.map(shown).join(", ")) : t("Rien acheté")}</span></div>`; }).join("")}</div></article>`).join("")
       : `<p class="w-empty">${t("Pas encore de semaine terminée. La première apparaîtra ici lundi prochain.")}</p>`;
     renderYear(st);
   }
@@ -573,13 +577,13 @@
     const rows = S.children.map(k => {
       const wk = S.events.filter(e => e.child_id === k.id && e.at >= mon && e.at < end);
       const won = wk.filter(e => e.points > 0).reduce((a, e) => a + e.points, 0), spent = -wk.filter(e => e.points < 0).reduce((a, e) => a + e.points, 0);
-      return { k, won, spent, bal: total(k.id), goal: k.weekly_goal || 25 };
+      return { k, won, spent, bal: total(k.id) };
     });
     const sum = f => rows.reduce((a, r) => a + r[f], 0);
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
-    $("#report").innerHTML = `<thead><tr>${["Enfant", "Gagnés", "Objectif", "Dépensés", "Valeur gagnée", "Solde", "Valeur du solde"].map(h => `<th>${t(h)}</th>`).join("")}</tr></thead>
-      <tbody>${rows.length ? rows.map(r => `<tr><td style="color:${charOf(r.k).color}">${charOf(r.k).icon} ${esc(r.k.name)}</td><td>${r.won} pts</td><td>${r.won >= r.goal ? `<span class="pill yes">${t("atteint ✓")}</span>` : `${r.won} / ${r.goal}`}</td><td>${r.spent} pts</td><td>${euro(r.won * rate)}</td><td>${r.bal} pts</td><td>${euro(r.bal * rate)}</td></tr>`).join("") : `<tr><td colspan="7">${t("Pas encore d'enfant.")}</td></tr>`}</tbody>
-      ${rows.length ? `<tfoot><tr><td>${t("Total famille")}</td><td>${sum("won")} pts</td><td></td><td>${sum("spent")} pts</td><td>${euro(sum("won") * rate)}</td><td>${sum("bal")} pts</td><td>${euro(sum("bal") * rate)}</td></tr></tfoot>` : ""}`;
+    $("#report").innerHTML = `<thead><tr>${["Enfant", "Gagnés", "Dépensés", "Valeur gagnée", "Solde", "Valeur du solde"].map(h => `<th>${t(h)}</th>`).join("")}</tr></thead>
+      <tbody>${rows.length ? rows.map(r => `<tr><td style="color:${charOf(r.k).color}">${charOf(r.k).icon} ${esc(r.k.name)}</td><td>${r.won} pts</td><td>${r.spent} pts</td><td>${euro(r.won * rate)}</td><td>${r.bal} pts</td><td>${euro(r.bal * rate)}</td></tr>`).join("") : `<tr><td colspan="6">${t("Pas encore d'enfant.")}</td></tr>`}</tbody>
+      ${rows.length ? `<tfoot><tr><td>${t("Total famille")}</td><td>${sum("won")} pts</td><td>${sum("spent")} pts</td><td>${euro(sum("won") * rate)}</td><td>${sum("bal")} pts</td><td>${euro(sum("bal") * rate)}</td></tr></tfoot>` : ""}`;
   }
   $("#rate-form").addEventListener("submit", async e => {
     e.preventDefault();
@@ -596,7 +600,7 @@
     $("#invite-code").textContent = S.family.invite_code || "";
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#admin-kids").innerHTML = S.children.length ? S.children.map(k => { const c = charOf(k), delKey = "delkid|" + k.id;
-      return `<div class="akid" style="${kidStyle(k)}"><span class="avatar" aria-hidden="true">${c.icon}</span><div class="grow"><b>${esc(k.name)}</b><small>${t("{char} · objectif {n} points par semaine", { char: esc(c.name), n: k.weekly_goal })}</small></div>
+      return `<div class="akid" style="${kidStyle(k)}"><span class="avatar" aria-hidden="true">${c.icon}</span><div class="grow"><b>${esc(k.name)}</b><small>${esc(c.name)}</small></div>
         <button class="btn ghost small" data-editkid="${k.id}">${t("Modifier")}</button><button class="btn ghost small" data-delkid="${k.id}">${t(S.confirmKey === delKey ? "Sûr ? Ses points seront effacés" : "Supprimer")}</button></div>`; }).join("")
       : `<p class="hint">${t("Pas encore d'enfant. Ajoute le premier avec le formulaire ci-dessous.")}</p>`;
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
@@ -607,7 +611,7 @@
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     forSel.innerHTML = `<option value="">${t("Tous les enfants")}</option>` + S.children.map(k => `<option value="${k.id}">${esc(k.name)}</option>`).join("");
     if ([...forSel.options].some(o => o.value === cur)) forSel.value = cur;
-    $("#reset-btn").textContent = t(S.resetArmed ? "Sûr ? Tous les points seront effacés" : "Tout remettre à zéro");
+    $("#reset-btn").textContent = t(S.resetArmed ? "Sûr ? Les points de cette semaine seront effacés" : "Remettre la semaine à zéro");
     $("#reset-btn").classList.toggle("confirm", S.resetArmed);
   }
   function fillAdminForms() {
@@ -640,7 +644,7 @@
   }
   function resetKidForm() {
     S.editingKid = null; S.pickedChar = window.CHARACTERS[S.children.length % window.CHARACTERS.length].id;
-    $("#kid-name").value = ""; $("#kid-goal").value = 25;
+    $("#kid-name").value = "";
     $("#kid-form-title").textContent = t("Ajouter un enfant"); $("#kid-submit").textContent = t("Ajouter l'enfant");
     show("#kid-cancel", false); msg("#kid-err"); renderCharPicker();
   }
@@ -648,10 +652,9 @@
   $("#kid-cancel").addEventListener("click", resetKidForm);
   $("#kid-form").addEventListener("submit", async e => {
     e.preventDefault(); msg("#kid-err");
-    const name = $("#kid-name").value.trim(), goal = Math.round(Number($("#kid-goal").value));
+    const name = $("#kid-name").value.trim();
     if (!name) return msg("#kid-err", t("Écris le prénom de l'enfant."));
-    if (!(goal >= 1 && goal <= 999)) return msg("#kid-err", t("L'objectif doit être entre 1 et 999 points."));
-    const row = { name: name.slice(0, 30), weekly_goal: goal, character: S.pickedChar };
+    const row = { name: name.slice(0, 30), character: S.pickedChar };
     const { error } = S.editingKid
       ? await sb.from("children").update(row).eq("id", S.editingKid)
       : await sb.from("children").insert(Object.assign(row, { family_id: S.family.id, position: S.children.length }));
@@ -713,11 +716,9 @@
   $("#reset-btn").addEventListener("click", async () => {
     if (!S.resetArmed) { S.resetArmed = true; setTimeout(() => { S.resetArmed = false; renderAdminLists(); }, 5000); return renderAdminLists(); }
     S.resetArmed = false;
-    const [a, b] = await Promise.all([
-      sb.from("events").delete().eq("family_id", S.family.id),
-      sb.from("checks").delete().eq("family_id", S.family.id)
-    ]);
-    if (a.error || b.error) toast(OOPS); else toast(t("Tous les points sont remis à zéro."));
+    // Seule la semaine en cours est effacée : les semaines terminées restent (voir semaines-terminees.sql).
+    const { error } = await sb.rpc("remettre_semaine_a_zero", { fid: S.family.id });
+    if (error) toast(OOPS); else toast(t("Les points de la semaine sont remis à zéro."));
     await Promise.all([fetchEvents(), fetchChecks()]); render();
   });
 
@@ -735,7 +736,7 @@
       if (await addEvent(kid, item.points, item.label)) toast(t("Bravo {name} ! +{n} points", { name: (kidById(kid) || {}).name, n: item.points }));
     } else if (d.undo) {
       const last = S.events.filter(x => x.child_id === d.undo).sort((x, y) => y.at - x.at)[0];
-      if (last) removeEvent(last.id);
+      if (last && !weekClosed(last.at)) removeEvent(last.id);
     } else if (d.check) {
       const kid = kidById(d.check);
       if (!b.classList.contains("done") && kid) playPower(b, kid);
@@ -764,7 +765,7 @@
     } else if (d.editkid) {
       const k = kidById(d.editkid); if (!k) return;
       S.editingKid = k.id; S.pickedChar = k.character;
-      $("#kid-name").value = k.name; $("#kid-goal").value = k.weekly_goal;
+      $("#kid-name").value = k.name;
       $("#kid-form-title").textContent = t("Modifier {name}", { name: k.name }); $("#kid-submit").textContent = t("Enregistrer");
       show("#kid-cancel", true); renderCharPicker();
       $("#kid-form").scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "center" });

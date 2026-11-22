@@ -67,6 +67,29 @@ verifier(await p.isVisible('[data-bonus$="|soir"]'), "après annulation, le bout
 await vue("#points");
 verifier((await p.textContent(".kid .total b")).trim() === "3", "annuler les missions du soir retire les 4 points");
 
+// Semaines terminées : leurs points et leur résultat ne changent plus
+await vue("#admin");
+await p.fill("#kid-name", "Enfant 2"); await p.click('[data-char="pirate"]'); await p.click("#kid-submit"); await attendre(300);
+await p.evaluate(() => {
+  const db = window.__db, k = db.children.find(c => c.name === "Enfant 2"), d = new Date();
+  d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7) - 3);  // jeudi de la semaine dernière
+  db.events.push({ id: "vieux", family_id: k.family_id, child_id: k.id, points: 6, label: "Chambre rangée", created_at: d.toISOString() });
+});
+await p.click("#reset-btn"); await attendre(100);
+verifier((await p.textContent("#reset-btn")).includes("cette semaine"), "remettre à zéro demande une confirmation et parle de la semaine en cours");
+await p.click("#reset-btn"); await attendre(400);
+const k2 = await p.evaluate(() => window.__db.children.find(c => c.name === "Enfant 2").id);
+await vue("#points");
+verifier((await p.locator("#kids .kid .total b").nth(0).textContent()).trim() === "0", "la remise à zéro efface les points de la semaine en cours");
+verifier((await p.locator("#kids .kid .total b").nth(1).textContent()).trim() === "6", "la remise à zéro garde les points des semaines terminées");
+verifier(await p.isDisabled(`[data-undo="${k2}"]`) && (await p.textContent(`[data-undo="${k2}"]`)).includes("🔒"), "« Annuler le dernier » ne touche pas une semaine terminée");
+await vue("#semaines");
+verifier((await p.textContent("#wk-past")).includes("6 pts"), "les semaines terminées gardent leurs points");
+verifier(!/objectif/i.test(await p.textContent("#app")), "plus d'objectif de la semaine nulle part");
+await vue("#admin");
+verifier(await p.locator("#kid-goal").count() === 0 && !(await p.textContent("#report thead")).includes("Objectif"), "plus de case ni de colonne « Objectif » dans l'administration");
+await vue("#points");
+
 verifier(await p.isHidden("#super-btn") && await p.isHidden("#logout") && await p.isHidden("#logout-top"), "en haut, plus de boutons super admin, salon ni déconnexion pour un administrateur");
 await vue("#admin");
 verifier(await p.isVisible("#super-btn") && await p.isVisible("#salon-btn") && await p.isVisible("#logout"), "les boutons du compte sont dans l'onglet Administration");
