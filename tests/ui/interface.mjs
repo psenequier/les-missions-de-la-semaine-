@@ -215,6 +215,9 @@ await ctxEn.close();
 
 verifier(await p.evaluate(() => window.__xss) === undefined, "aucun texte piégé n'a exécuté de code");
 verifier(await p.locator("img").count() === 0, "aucune balise injectée dans la page");
+await p.evaluate(() => (location.hash = "#points")); await p.waitForTimeout(250);
+verifier(await p.evaluate(() => !document.querySelector("[data-style]")), "tous les styles des cartes sont posés par JavaScript (la CSP refuse les attributs style)");
+verifier(await p.evaluate(() => document.querySelectorAll(".kid").length > 0 && [...document.querySelectorAll(".kid")].every(k => k.style.getPropertyValue("--c"))), "chaque carte d'enfant a la couleur de son personnage");
 verifier(erreurs.length === 0, "aucune erreur JavaScript" + (erreurs.length ? " : " + erreurs.join(" | ") : ""));
 
 await navigateur.close(); serveur.close();
