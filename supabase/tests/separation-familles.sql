@@ -112,6 +112,46 @@ select test.egal((select count(*) from family_members m join families f on f.id 
 set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
 select test.egal((select count(*) from families), 1, 'B ne voit que sa famille');
 
+-- Semaines terminées : leurs points ne changent plus
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+insert into children (family_id, name) values (:'fa', 'Enfant semaines') returning id as ks \gset
+insert into events (family_id, child_id, points, label) values (:'fa', :'ks', 4, 'semaine passée') returning id as ev_vieux \gset
+reset role;
+update events set created_at = public.debut_semaine() - interval '1 day' where id = :'ev_vieux';
+update weekly_goals set week = date '2000-01-03' where child_id = :'ks';
+set role authenticated; set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select test.refuse(format('delete from events where id = %L', :'ev_vieux'), 'annuler des points d''une semaine terminée');
+set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';
+select test.refuse(format('delete from events where id = %L', :'ev_vieux'), 'même le super admin annule des points d''une semaine terminée');
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+insert into events (family_id, child_id, points, label, created_at) values (:'fa', :'ks', 3, 'antidaté', now() - interval '10 days');
+select test.egal((select count(*) from events where label = 'antidaté' and created_at < public.debut_semaine()), 0, 'des points ajoutés avec une date passée comptent pour la semaine en cours');
+insert into events (family_id, child_id, points, label) values (:'fa', :'ks', 2, 'cette semaine') returning id as ev_neuf \gset
+delete from events where id = :'ev_neuf';
+select test.egal((select count(*) from events where id = :'ev_neuf'), 0, 'on peut encore annuler des points de la semaine en cours');
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+select test.refuse(format('select public.remettre_semaine_a_zero(%L)', :'fa'), 'B remet la semaine de A à zéro');
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';
+select test.refuse(format('select public.remettre_semaine_a_zero(%L)', :'fa'), 'un simple membre remet la semaine à zéro');
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select public.remettre_semaine_a_zero(:'fa');
+select test.egal((select count(*) from events where family_id = :'fa' and created_at >= public.debut_semaine()), 0, 'la remise à zéro efface la semaine en cours');
+select test.egal((select count(*) from events where id = :'ev_vieux'), 1, 'la remise à zéro garde les semaines terminées');
+
+-- L'objectif des semaines terminées est gardé quand on le change
+update children set weekly_goal = 40 where id = :'ks';
+select test.egal((select goal from weekly_goals where child_id = :'ks' and week = date '2000-01-03'), 25, 'l''ancien objectif reste pour les semaines terminées');
+select test.egal((select goal from weekly_goals where child_id = :'ks' and week = (public.debut_semaine() at time zone 'Europe/Paris')::date), 40, 'le nouvel objectif compte à partir de cette semaine');
+select test.refuse(format('insert into weekly_goals (family_id, child_id, week, goal) values (%L, %L, %L, 1)', :'fa', :'ks', '2000-01-03'), 'un parent réécrit l''objectif d''une semaine terminée');
+select test.refuse(format('update weekly_goals set goal = 1 where child_id = %L', :'ks'), 'un parent change l''objectif d''une semaine terminée');
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+select test.egal((select count(*) from weekly_goals where family_id = :'fa'), 0, 'B ne voit pas les objectifs de A');
+
+-- Supprimer un enfant efface encore tout son historique
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+delete from children where id = :'ks';
+select test.egal((select count(*) from events where id = :'ev_vieux'), 0, 'supprimer un enfant efface aussi ses semaines terminées');
+
 -- Catalogue de départ : copie des récompenses de la famille du super admin
 set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';
 select public.create_family('Famille du super admin') as fm \gset
