@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://oypwntftajpjyzgcafnp.supabase.co wss://oypwntftajpjyzgcafnp.supabase.co; object-src 'none'; base-uri 'none'; form-action 'self'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#fff8ef">
@@ -97,7 +97,7 @@
     <h2 class="sec">🛡️ Super admin : toutes les familles</h2>
     <p class="hint">Tu vois ici chaque famille du site. « Ouvrir » te fait entrer dans la famille avec les droits d'administrateur. Les familles, elles, restent séparées entre elles.</p>
     <p class="err" id="super-err" hidden></p>
-    <div class="report-wrap"><table class="report" id="super-list"></table></div>
+    <div class="report-wrap"><table class="report" id="super-list"><thead><tr><th>Famille</th></tr></thead></table></div>
     <div class="row"><button type="button" class="btn ghost" id="super-close">↩︎ Retour</button></div>
   </section>
 
@@ -161,7 +161,7 @@
       <div class="card">
         <h2 class="sec">Rapport de la semaine</h2>
         <p class="hint" id="rp-range"></p>
-        <div class="report-wrap"><table class="report" id="report"></table></div>
+        <div class="report-wrap"><table class="report" id="report"><thead><tr><th>Enfant</th></tr></thead></table></div>
         <form id="rate-form" class="form inline" novalidate>
           <label>Budget maximum par semaine par enfant (€)<input id="rate" type="number" min="0" max="1000" step="0.5" inputmode="decimal"></label>
           <button class="btn" type="submit">Enregistrer</button>

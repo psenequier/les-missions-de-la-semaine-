@@ -13,7 +13,7 @@ Chaque famille a ses propres données : la base refuse à une famille de lire ou
 3. **Adresse du site** : dans Supabase, *Authentication* → *URL Configuration*, mettre l'adresse GitHub Pages du site
    (par exemple `https://psenequier.github.io/les-missions-de-la-semaine-/`) dans *Site URL* et dans *Redirect URLs*.
    Sinon, les liens de confirmation et de mot de passe oublié ne ramènent pas au site.
-4. **Clés** : dans `config.js`, remplacer l'URL du projet et la clé *anon public* (Supabase → *Project Settings* → *API*).
+4. **Clés** : dans `config.js`, remplacer l'URL du projet et la clé *anon public* (Supabase → *Project Settings* → *API*). Mettre la même adresse dans `index.html`, ligne `connect-src` (en `https://` et `wss://`) : la CI vérifie que les deux correspondent.
    Ne jamais y mettre la clé *service_role*.
 5. **Publication** : sur GitHub, *Settings* → *Pages* → *Deploy from a branch* → `main`, dossier `/ (root)`.
 

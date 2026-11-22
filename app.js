@@ -86,6 +86,8 @@
     return { routines, tasks, maxWeek, weeklyBudget, euroPerPoint: maxWeek > 0 ? weeklyBudget / maxWeek : 0 };
   };
   const isAdmin = () => S.role === "admin";
+  // Adresse e-mail plausible : un seul @, rien d'espacé, et un point dans le nom de domaine (ni au début ni à la fin).
+  const isEmail = e => { const [user, dom, extra] = e.split("@"); return !!user && !!dom && extra === undefined && !/\s/.test(e) && dom.indexOf(".") > 0 && !dom.endsWith("."); };
   // Valeur d'une récompense en points : son prix en euros ÷ la valeur d'un point (budget de la semaine ÷ points possibles).
   // Elle suit donc le budget et les missions. Sans prix en euros (base pas encore à jour), on garde ses points enregistrés.
   const pointsFor = eur => { const rate = settings().euroPerPoint; return rate > 0 && eur > 0 ? Math.max(1, Math.round(eur / rate)) : 0; };
@@ -128,7 +130,7 @@
   $("#auth-form").addEventListener("submit", async e => {
     e.preventDefault(); msg("#auth-err"); msg("#auth-ok");
     const email = $("#auth-email").value.trim(), password = $("#auth-password").value;
-    if (!/^\S+@\S+\.\S+$/.test(email)) return msg("#auth-err", t("Écris une adresse e-mail valide."));
+    if (!isEmail(email)) return msg("#auth-err", t("Écris une adresse e-mail valide."));
     if (password.length < 8) return msg("#auth-err", t("Le mot de passe doit avoir au moins 8 caractères."));
     const btn = $("#auth-submit"); btn.disabled = true;
     try {
@@ -146,7 +148,7 @@
   $("#auth-forgot").addEventListener("click", async () => {
     msg("#auth-err"); msg("#auth-ok");
     const email = $("#auth-email").value.trim();
-    if (!/^\S+@\S+\.\S+$/.test(email)) return msg("#auth-err", t("Écris d'abord ton adresse e-mail, puis clique sur « Mot de passe oublié ? »."));
+    if (!isEmail(email)) return msg("#auth-err", t("Écris d'abord ton adresse e-mail, puis clique sur « Mot de passe oublié ? »."));
     const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: backUrl() });
     if (error) msg("#auth-err", t("L'e-mail n'a pas pu être envoyé. Réessaie plus tard."));
     else msg("#auth-ok", t("Si un compte existe avec cette adresse, un e-mail pour changer le mot de passe vient d'être envoyé."));
@@ -158,7 +160,7 @@
     const { error } = await sb.auth.updateUser({ password });
     if (error) return msg("#recover-err", t("Le mot de passe n'a pas pu être changé : {msg}", { msg: error.message }));
     toast(t("Mot de passe changé ✓")); S.recovering = false;
-    const { data } = await sb.auth.getSession(); handleSession(data.session, true);
+    const { data } = await sb.auth.getSession(); void handleSession(data.session, true);
   });
   $("#logout").addEventListener("click", async () => { await sb.auth.signOut(); });
   $("#logout-top").addEventListener("click", async () => { await sb.auth.signOut(); });
@@ -245,7 +247,7 @@
     $("#salon-btn").textContent = t(on ? "📺 Quitter le mode salon" : "📺 Mode salon");
     store.set("points-salon", on ? "1" : "");
     if (on) {
-      keepAwake(); armIdle();
+      void keepAwake(); armIdle();
       if (byClick && document.documentElement.requestFullscreen && !document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
       if (byClick) toast("wakeLock" in navigator ? t("Mode salon : l'écran reste allumé 📺") : t("Ce navigateur ne peut pas garder l'écran allumé : mets la mise en veille de la tablette sur « Jamais »."));
     } else {
@@ -256,7 +258,7 @@
     }
   }
   $("#salon-btn").addEventListener("click", () => setSalon(!salonOn(), true));
-  ["pointerdown", "keydown"].forEach(t => document.addEventListener(t, () => { if (salonOn()) { armIdle(); keepAwake(); } }, { passive: true }));
+  ["pointerdown", "keydown"].forEach(t => document.addEventListener(t, () => { if (salonOn()) { armIdle(); void keepAwake(); } }, { passive: true }));
   document.addEventListener("visibilitychange", keepAwake);
   if (store.get("points-salon") === "1") setSalon(true, false);
 
@@ -280,7 +282,7 @@
     await enterFamily(data, "admin", true);
   }
   $("#super-btn").addEventListener("click", openSuper);
-  $("#super-list").addEventListener("click", e => { const b = e.target.closest("[data-visit]"); if (b) visitFamily(b.dataset.visit); });
+  $("#super-list").addEventListener("click", e => { const b = e.target.closest("[data-visit]"); if (b) void visitFamily(b.dataset.visit); });
   $("#super-close").addEventListener("click", () => (S.family ? screen("app") : loadFamilies()));
   $("#visit-leave").addEventListener("click", () => loadFamilies());
 
@@ -797,11 +799,11 @@
       if (await addEvent(kid, item.points, item.label)) toast(t("Bravo {name} ! +{n} points", { name: (kidById(kid) || {}).name, n: item.points }));
     } else if (d.undo) {
       const last = S.events.filter(x => x.child_id === d.undo).sort((x, y) => y.at - x.at)[0];
-      if (last && !weekClosed(last.at)) removeEvent(last.id);
+      if (last && !weekClosed(last.at)) void removeEvent(last.id);
     } else if (d.check) {
       const kid = kidById(d.check);
       if (!b.classList.contains("done") && kid) playPower(b, kid);
-      toggleCheck(d.check, d.item);
+      void toggleCheck(d.check, d.item);
     } else if (d.bonus) {
       const [kid, part] = d.bonus.split("|"), r = settings().routines[part];
       if (doneToday(kid, r.label)) return toast(t("Déjà fait aujourd'hui ✓ Reviens demain !"));
@@ -813,7 +815,7 @@
       S.confirmKey = null; clearTimeout(S.confirmTimer);
       const day = dayKey();
       const ev = S.events.filter(x => x.child_id === kid && x.label === r.label && x.points > 0 && dayKey(x.at) === day).sort((x, y) => y.at - x.at)[0];
-      if (ev) removeEvent(ev.id); else render();
+      if (ev) void removeEvent(ev.id); else render();
     } else if (d.buy) {
       const [kid, rid] = d.buy.split("|"), key = "shop|" + kid + "|" + rid;
       if (S.confirmKey !== key) return armConfirm(key);
@@ -908,5 +910,5 @@
 
   // ───────── Démarrage ─────────
   setAuthMode("login");
-  sb.auth.getSession().then(({ data }) => { if (!S.recovering) handleSession(data.session); });
+  sb.auth.getSession().then(({ data }) => { if (!S.recovering) void handleSession(data.session); });
 })();
