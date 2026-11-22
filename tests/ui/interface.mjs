@@ -88,8 +88,8 @@ verifier(await p.isHidden("#don-card"), "sans lien Ko-fi dans config.js, pas de 
 // Bouton de don : on change le lien Ko-fi de config.js pour cette page seulement.
 async function pageDon(lien) {
   const q = await navigateur.newPage({ viewport: { width: 1000, height: 1300 } });
-  await q.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
-  await q.route(/\/config\.js/, async r => {
+  await q.route(u => ["fonts.googleapis.com", "fonts.gstatic.com"].includes(u.hostname), r => r.abort());
+  await q.route(u => u.origin === new URL(U).origin && u.pathname === "/config.js", async r => {
     const corps = await readFile(join(racine, "config.js"), "utf8");
     await r.fulfill({ contentType: "text/javascript", body: corps.replace(/kofi:\s*"[^"]*"/, `kofi: ${JSON.stringify(lien)}`) });
   });
