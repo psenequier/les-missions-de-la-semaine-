@@ -86,6 +86,10 @@
     return { routines, tasks, maxWeek, weeklyBudget, euroPerPoint: maxWeek > 0 ? weeklyBudget / maxWeek : 0 };
   };
   const isAdmin = () => S.role === "admin";
+  // Valeur d'une récompense en points : son prix en euros ÷ la valeur d'un point (budget de la semaine ÷ points possibles).
+  // Elle suit donc le budget et les missions. Sans prix en euros (base pas encore à jour), on garde ses points enregistrés.
+  const pointsFor = eur => { const rate = settings().euroPerPoint; return rate > 0 && eur > 0 ? Math.max(1, Math.round(eur / rate)) : 0; };
+  const costOf = r => (Number(r.price_eur) > 0 && pointsFor(Number(r.price_eur))) || r.cost;
   const kidById = id => S.children.find(k => k.id === id);
   const charOf = kid => L.char(window.characterById(kid && kid.character));
   const total = kidId => S.events.reduce((a, e) => a + (e.child_id === kidId ? e.points : 0), 0);
@@ -316,8 +320,17 @@
   // Une semaine finie (avant lundi) est fermée : ses points ne changent plus (voir semaines-terminees.sql).
   const weekClosed = ms => ms < monday(Date.now()).getTime();
   async function fetchRewards() {
-    const { data, error } = await sb.from("rewards").select("*").eq("family_id", S.family.id).order("cost").order("created_at");
-    if (error) throw error; S.rewards = data;
+    const { data, error } = await sb.from("rewards").select("*").eq("family_id", S.family.id).order("created_at");
+    if (error) throw error;
+    // Récompenses créées avant les prix en euros : on note une fois leur prix avec la valeur actuelle du point.
+    const rate = settings().euroPerPoint, old = data.filter(r => "price_eur" in r && r.price_eur == null);
+    if (isAdmin() && !S.visiting && rate > 0 && old.length) {
+      await Promise.all(old.map(r => {
+        r.price_eur = Math.min(1000, Math.max(0.01, Math.round(r.cost * rate * 100) / 100));
+        return sb.from("rewards").update({ price_eur: r.price_eur }).eq("id", r.id);
+      }));
+    }
+    S.rewards = data.sort((a, b) => costOf(a) - costOf(b));
   }
   async function fetchChecks() {
     const day = dayKey();
@@ -475,9 +488,9 @@
     $("#shop-items").innerHTML = S.rewards.length ? S.rewards.map(r => {
       const kids = S.children.filter(k => !r.child_ids || !r.child_ids.length || r.child_ids.includes(k.id));
       return `<article class="item"><div class="item-ico" aria-hidden="true">${esc(r.icon)}</div>
-        <h3 class="item-t">${esc(shown(r.title))}</h3><p class="price">${t("{n} points", { n: r.cost })}</p>
-        <div class="buy-row">${kids.map(k => { const tot = total(k.id), ok = tot >= r.cost, key = "shop|" + k.id + "|" + r.id, conf = S.confirmKey === key;
-          return `<button class="btn-buy ${conf ? "confirm" : ""}" style="${kidStyle(k)}" data-buy="${k.id}|${r.id}" ${ok ? "" : "disabled"}>${conf ? t("Sûr ? Oui !") : ok ? t("Acheter pour {name}", { name: esc(k.name) }) : t("{name} : encore {n}", { name: esc(k.name), n: r.cost - tot })}</button>`; }).join("")}</div></article>`;
+        <h3 class="item-t">${esc(shown(r.title))}</h3><p class="price">${t("{n} points", { n: costOf(r) })}</p>
+        <div class="buy-row">${kids.map(k => { const tot = total(k.id), ok = tot >= costOf(r), key = "shop|" + k.id + "|" + r.id, conf = S.confirmKey === key;
+          return `<button class="btn-buy ${conf ? "confirm" : ""}" style="${kidStyle(k)}" data-buy="${k.id}|${r.id}" ${ok ? "" : "disabled"}>${conf ? t("Sûr ? Oui !") : ok ? t("Acheter pour {name}", { name: esc(k.name) }) : t("{name} : encore {n}", { name: esc(k.name), n: costOf(r) - tot })}</button>`; }).join("")}</div></article>`;
     }).join("") : `<div class="empty">${t("Le catalogue est vide.")}${isAdmin() ? t(" Ajoute des récompenses dans {link}.", { link: `<a href="#admin">${t("⚙️ Administration")}</a>` }) : ""}</div>`;
     const bought = S.events.filter(e => e.points < 0).sort((a, b) => b.at - a.at).slice(0, 10);
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
@@ -598,7 +611,7 @@
     delete next.euroPerPoint;
     const { error } = await sb.from("families").update({ settings: next }).eq("id", S.family.id);
     if (error) return toast(OOPS);
-    S.family.settings = next; render(); toast(t("Budget de la semaine enregistré ✓"));
+    S.family.settings = next; S.rewards.sort((a, b) => costOf(a) - costOf(b)); render(); toast(t("Budget de la semaine enregistré ✓"));
   });
   function renderAdminLists() {
     renderReport();
@@ -610,7 +623,7 @@
       : `<p class="hint">${t("Pas encore d'enfant. Ajoute le premier avec le formulaire ci-dessous.")}</p>`;
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#admin-rewards").innerHTML = S.rewards.length ? S.rewards.map(r => { const who = !r.child_ids || !r.child_ids.length ? t("Pour tous") : t("Pour {names}", { names: r.child_ids.map(id => (kidById(id) || {}).name).filter(Boolean).map(esc).join(", ") }), key = "delrw|" + r.id;
-      return `<div class="akid"><span class="avatar" aria-hidden="true" style="border-color:var(--gold)">${esc(r.icon)}</span><div class="grow"><b style="color:var(--ink)">${esc(shown(r.title))}</b><small>${t("{n} points (≈ {eur}) · {who}", { n: r.cost, eur: euro(r.cost * settings().euroPerPoint), who })}</small></div><button class="btn ghost small" data-delrw="${r.id}">${t(S.confirmKey === key ? "Sûr ? Enlever" : "Enlever")}</button></div>`; }).join("")
+      return `<div class="akid"><span class="avatar" aria-hidden="true" style="border-color:var(--gold)">${esc(r.icon)}</span><div class="grow"><b style="color:var(--ink)">${esc(shown(r.title))}</b><small>${t("{n} points (≈ {eur}) · {who}", { n: costOf(r), eur: euro(Number(r.price_eur) > 0 ? Number(r.price_eur) : r.cost * settings().euroPerPoint), who })}</small></div><button class="btn ghost small" data-delrw="${r.id}">${t(S.confirmKey === key ? "Sûr ? Enlever" : "Enlever")}</button></div>`; }).join("")
       : `<p class="hint">${t("Aucune récompense pour l'instant.")}</p>`;
     const forSel = $("#rw-for"), cur = forSel.value;
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
@@ -711,7 +724,6 @@
   // Le parent donne le prix en euros ; le site le change en points avec la valeur d'un point
   // (budget de la semaine ÷ points possibles). Les points sont gardés : changer le budget ne change pas les récompenses déjà créées.
   const rwPrice = () => Number(String($("#rw-price").value).replace(",", "."));
-  const pointsFor = eur => { const rate = settings().euroPerPoint; return rate > 0 && eur > 0 ? Math.max(1, Math.round(eur / rate)) : 0; };
   function showRwPoints() {
     const eur = rwPrice(), n = pointsFor(eur);
     $("#rw-points").textContent = n ? t("Soit {n} points (1 point ≈ {value}).", { n, value: euro(settings().euroPerPoint) })
@@ -725,7 +737,9 @@
     if (!(price > 0 && price <= 1000)) return msg("#rw-err", t("Mets un prix entre 0,01 et 1000 €."));
     if (!cost) return msg("#rw-err", t("Ajoute d'abord des missions : le site en a besoin pour calculer la valeur d'un point."));
     if (cost > 9999) return msg("#rw-err", t("Ce prix fait plus de 9999 points. Augmente le budget de la semaine ou baisse le prix."));
-    const { error } = await sb.from("rewards").insert({ family_id: S.family.id, title: title.slice(0, 40), cost, icon: $("#rw-icon").value, child_ids: forId ? [forId] : null });
+    const row = { family_id: S.family.id, title: title.slice(0, 40), cost, price_eur: Math.round(price * 100) / 100, icon: $("#rw-icon").value, child_ids: forId ? [forId] : null };
+    let { error } = await sb.from("rewards").insert(row);
+    if (error && /price_eur/.test(error.message || "")) { delete row.price_eur; ({ error } = await sb.from("rewards").insert(row)); } // base pas encore à jour
     if (error) return msg("#rw-err", OOPS);
     $("#rw-title").value = ""; $("#rw-price").value = ""; showRwPoints();
     await fetchRewards(); render(); toast(t("{title} est dans le catalogue ! 🎁", { title }));
@@ -803,8 +817,8 @@
       if (S.confirmKey !== key) return armConfirm(key);
       S.confirmKey = null;
       const r = S.rewards.find(x => x.id === rid);
-      if (!r || total(kid) < r.cost) return render();
-      if (await addEvent(kid, -r.cost, r.title)) toast(t("Super ! {title} pour {name} 🎁", { title: shown(r.title), name: (kidById(kid) || {}).name }));
+      if (!r || total(kid) < costOf(r)) return render();
+      if (await addEvent(kid, -costOf(r), r.title)) toast(t("Super ! {title} pour {name} 🎁", { title: shown(r.title), name: (kidById(kid) || {}).name }));
     } else if (d.year) {
       S.yearShown += Number(d.year); renderWeeks();
     } else if (d.editkid) {
