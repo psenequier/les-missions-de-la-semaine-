@@ -29,7 +29,7 @@
     tasks: [{ label: "Chambre rangée", icon: "🧸", points: 2 }, { label: "Devoirs tout seul", icon: "✏️", points: 3 }]
   };
   const REWARD_ICONS = ["🎁", "🖍️", "📘", "📕", "🧸", "🍫", "🍦", "🎮", "📺", "🎨", "⚽", "🎬", "🍕", "🛝", "⭐", "🎟️"];
-  const TASK_ICONS = ["🧸", "✏️", "🧹", "🍽️", "🐶", "🌱", "📚", "🎹", "🚲", "🛏️", "🧺", "⭐"];
+  const TASK_ICONS = ["🧸", "✏️", "🚿", "🧹", "🍽️", "🐶", "🌱", "📚", "🎹", "🚲", "🛏️", "🧺", "⭐"];
   const MONTHS = ["Janv.", "Févr.", "Mars", "Avr.", "Mai", "Juin", "Juil.", "Août", "Sept.", "Oct.", "Nov.", "Déc."];
   const DAYN = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
