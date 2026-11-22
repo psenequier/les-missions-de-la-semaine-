@@ -103,10 +103,9 @@
     "Le site est gratuit et sans publicité. Si tu veux aider à le faire vivre, tu peux faire un petit don. Ce n'est pas obligatoire.":
       "The site is free and has no ads. If you'd like to help keep it going, you can make a small donation. It's completely optional.",
     "💛 Faire un don sur Ko-fi": "💛 Donate on Ko-fi",
-    "Remettre les points à zéro": "Reset the points",
-    "Efface tous les points et tous les achats de la famille. Les enfants, missions et récompenses restent.":
-      "Erases all the family's points and purchases. The children, missions and rewards stay.",
-    "Tout remettre à zéro": "Reset everything",
+    "Remettre la semaine à zéro": "Reset this week",
+    "Efface les points et les achats de la semaine en cours. Les semaines terminées ne changent plus : elles restent, comme les enfants, missions et récompenses.":
+      "Erases this week's points and purchases. Finished weeks can no longer change: they stay, along with the children, missions and rewards.",
 
     // ───── Messages (app.js) ─────
     "Le site n'est pas encore relié à sa base de données. Il faut remplir le fichier config.js.": "The site isn't connected to its database yet. The config.js file needs to be filled in.",
@@ -222,7 +221,7 @@
     "Enlever": "Remove",
     "Aucune récompense pour l'instant.": "No rewards yet.",
     "Tous les enfants": "All the children",
-    "Sûr ? Tous les points seront effacés": "Sure? All points will be erased",
+    "Sûr ? Les points de cette semaine seront effacés": "Sure? This week's points will be erased",
     "Ex. : Mettre la table": "e.g. Set the table",
     "Écris le prénom de l'enfant.": "Enter the child's first name.",
     "L'objectif doit être entre 1 et 999 points.": "The goal must be between 1 and 999 points.",
@@ -241,7 +240,10 @@
     "Écris le nom de la récompense.": "Enter the name of the reward.",
     "Mets un nombre de points entre 1 et 9999.": "Enter a number of points between 1 and 9999.",
     "{title} est dans le catalogue ! 🎁": "{title} is in the shop! 🎁",
-    "Tous les points sont remis à zéro.": "All points have been reset.",
+    "Les points de la semaine sont remis à zéro.": "This week's points have been reset.",
+    "Cette semaine est terminée 🔒 Ses points ne changent plus.": "This week is over 🔒 Its points can no longer change.",
+    "🔒 Semaine terminée, plus rien à annuler": "🔒 Week over, nothing left to undo",
+    "Semaine terminée : ses points ne changent plus": "Week over: its points can no longer change",
     "Bravo {name} ! +{n} points": "Well done {name}! +{n} points",
     "Super ! {title} pour {name} 🎁": "Great! {title} for {name} 🎁",
     "Modifier {name}": "Edit {name}",

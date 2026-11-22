@@ -55,8 +55,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Schéma, puis super-admin.sql une 2e fois (il doit pouvoir être relancé)
-        run: psql -d ci -X -q -v ON_ERROR_STOP=1 -f supabase/tests/shim.sql -f supabase/schema.sql -f supabase/super-admin.sql
+      - name: Schéma, puis super-admin.sql et semaines-terminees.sql une 2e fois (ils doivent pouvoir être relancés)
+        run: psql -d ci -X -q -v ON_ERROR_STOP=1 -f supabase/tests/shim.sql -f supabase/schema.sql -f supabase/super-admin.sql -f supabase/semaines-terminees.sql
       - name: Tests de séparation des familles
         run: psql -d ci -X -q -v ON_ERROR_STOP=1 -f supabase/tests/separation-familles.sql
       - name: Témoin, une règle cassée exprès doit être détectée

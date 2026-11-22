@@ -51,7 +51,7 @@
   // ───────── État ─────────
   const S = {
     user: null, memberships: [], family: null, role: "member",
-    children: [], rewards: [], events: [], checks: new Set(), checksDay: "",
+    children: [], goals: {}, rewards: [], events: [], checks: new Set(), checksDay: "",
     channel: null, confirmKey: null, confirmTimer: null, busy: false,
     yearShown: new Date().getFullYear(), editingKid: null, pickedChar: "pirate", adminFilled: false, resetArmed: false
   };
@@ -306,7 +306,21 @@
   async function fetchChildren() {
     const { data, error } = await sb.from("children").select("*").eq("family_id", S.family.id).order("position").order("created_at");
     if (error) throw error; S.children = data;
+    // Objectif de chaque semaine (table weekly_goals). Si la base ne l'a pas encore, on garde l'objectif actuel.
+    let g = null;
+    try { g = await sb.from("weekly_goals").select("child_id, week, goal").eq("family_id", S.family.id).order("week"); } catch { /* base pas encore à jour */ }
+    S.goals = {};
+    if (g && !g.error) (g.data || []).forEach(x => (S.goals[x.child_id] = S.goals[x.child_id] || []).push([String(x.week), x.goal]));
   }
+  // Objectif d'une semaine terminée : celui qui était en place cette semaine-là.
+  function goalOf(kid, mon) {
+    const list = S.goals[kid.id] || [], wk = dayKey(mon);
+    let g = list.length ? list[0][1] : kid.weekly_goal;
+    list.forEach(([w, v]) => { if (w <= wk) g = v; });
+    return g || 25;
+  }
+  // Une semaine finie (avant lundi) est fermée : ses points ne changent plus (voir semaines-terminees.sql).
+  const weekClosed = ms => ms < monday(Date.now()).getTime();
   async function fetchRewards() {
     const { data, error } = await sb.from("rewards").select("*").eq("family_id", S.family.id).order("cost").order("created_at");
     if (error) throw error; S.rewards = data;
@@ -367,7 +381,10 @@
     if (S.busy) return; S.busy = true;
     const { error } = await sb.from("events").delete().eq("id", id);
     S.busy = false;
-    if (error) return toast(OOPS);
+    if (error) {
+      if (!/semaine_terminee/.test(error.message || "")) return toast(OOPS);
+      toast(t("Cette semaine est terminée 🔒 Ses points ne changent plus.")); await fetchEvents(); return render();
+    }
     await fetchEvents(); render(); toast(t("Annulé"));
   }
   async function toggleCheck(childId, item) {
@@ -416,7 +433,7 @@
     ];
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#kids").innerHTML = S.children.length ? S.children.map(k => {
-      const hist = S.events.filter(e => e.child_id === k.id).sort((a, b) => b.at - a.at).slice(0, 5);
+      const hist = S.events.filter(e => e.child_id === k.id).sort((a, b) => b.at - a.at).slice(0, 5), locked = hist.length && weekClosed(hist[0].at);
       return `<article class="kid" style="${kidStyle(k)}">
         ${kidHead(k, `<div class="total"><b>${total(k.id)}</b><span>${t("points")}</span></div>`)}
         <div><h3>${t("Gagner des points")}</h3><div class="earn" style="margin-top:8px">
@@ -427,7 +444,7 @@
           }).join("")}
         </div></div>
         <div><h3>${t("Derniers points")}</h3>${hist.length ? `<ul class="history" style="margin-top:8px">${hist.map(e => `<li><span>${esc(shown(e.label))} <span class="when">${shortDate(e.at)}</span></span><span class="${e.points > 0 ? "plus" : "minus"}">${e.points > 0 ? "+" : ""}${e.points}</span></li>`).join("")}</ul>` : `<p class="hint" style="margin-top:8px">${t("Pas encore de points. Appuie sur un bouton au-dessus !")}</p>`}</div>
-        <button class="btn-undo" data-undo="${k.id}" ${hist.length ? "" : "disabled"}>${t("↩︎ Annuler le dernier")}</button>
+        <button class="btn-undo" data-undo="${k.id}" ${hist.length && !locked ? "" : "disabled"}>${locked ? t("🔒 Semaine terminée, plus rien à annuler") : t("↩︎ Annuler le dernier")}</button>
       </article>`;
     }).join("") : emptyKids();
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
@@ -527,8 +544,8 @@
 
     const past = weeks.slice(0, -1).reverse();
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
-    $("#wk-past").innerHTML = past.length && kids.length ? past.map(w => `<article class="w-week"><div class="w-when">${t("Semaine")}<small>${shortDate(w)} – ${shortDate(addDays(w, 6))}</small></div><div class="w-week-kids">
-      ${kids.map(k => { const goal = k.weekly_goal || 25, p = weekTotal(st, k.id, w), ok = p >= goal, b = st.buys[k.id][dayKey(w)];
+    $("#wk-past").innerHTML = past.length && kids.length ? past.map(w => `<article class="w-week"><div class="w-when">${t("Semaine")} <span title="${t("Semaine terminée : ses points ne changent plus")}">🔒</span><small>${shortDate(w)} – ${shortDate(addDays(w, 6))}</small></div><div class="w-week-kids">
+      ${kids.map(k => { const goal = goalOf(k, w), p = weekTotal(st, k.id, w), ok = p >= goal, b = st.buys[k.id][dayKey(w)];
         return `<div class="w-wk" style="${kidStyle(k)}"><div class="w-row"><span class="w-n">${esc(k.name)}</span><span>${p} pts <span class="pill ${ok ? "yes" : "no"}">${ok ? t("objectif ✓") : t("pas atteint")}</span></span></div>
         <div class="w-bar"><i style="width:${Math.min(100, p / goal * 100)}%"></i></div><span class="w-note">${b ? "🎁 " + esc(b.map(shown).join(", ")) : t("Rien acheté")}</span></div>`; }).join("")}</div></article>`).join("")
       : `<p class="w-empty">${t("Pas encore de semaine terminée. La première apparaîtra ici lundi prochain.")}</p>`;
@@ -606,7 +623,7 @@
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     forSel.innerHTML = `<option value="">${t("Tous les enfants")}</option>` + S.children.map(k => `<option value="${k.id}">${esc(k.name)}</option>`).join("");
     if ([...forSel.options].some(o => o.value === cur)) forSel.value = cur;
-    $("#reset-btn").textContent = t(S.resetArmed ? "Sûr ? Tous les points seront effacés" : "Tout remettre à zéro");
+    $("#reset-btn").textContent = t(S.resetArmed ? "Sûr ? Les points de cette semaine seront effacés" : "Remettre la semaine à zéro");
     $("#reset-btn").classList.toggle("confirm", S.resetArmed);
   }
   function fillAdminForms() {
@@ -712,11 +729,9 @@
   $("#reset-btn").addEventListener("click", async () => {
     if (!S.resetArmed) { S.resetArmed = true; setTimeout(() => { S.resetArmed = false; renderAdminLists(); }, 5000); return renderAdminLists(); }
     S.resetArmed = false;
-    const [a, b] = await Promise.all([
-      sb.from("events").delete().eq("family_id", S.family.id),
-      sb.from("checks").delete().eq("family_id", S.family.id)
-    ]);
-    if (a.error || b.error) toast(OOPS); else toast(t("Tous les points sont remis à zéro."));
+    // Seule la semaine en cours est effacée : les semaines terminées restent (voir semaines-terminees.sql).
+    const { error } = await sb.rpc("remettre_semaine_a_zero", { fid: S.family.id });
+    if (error) toast(OOPS); else toast(t("Les points de la semaine sont remis à zéro."));
     await Promise.all([fetchEvents(), fetchChecks()]); render();
   });
 
@@ -734,7 +749,7 @@
       if (await addEvent(kid, item.points, item.label)) toast(t("Bravo {name} ! +{n} points", { name: (kidById(kid) || {}).name, n: item.points }));
     } else if (d.undo) {
       const last = S.events.filter(x => x.child_id === d.undo).sort((x, y) => y.at - x.at)[0];
-      if (last) removeEvent(last.id);
+      if (last && !weekClosed(last.at)) removeEvent(last.id);
     } else if (d.check) {
       const kid = kidById(d.check);
       if (!b.classList.contains("done") && kid) playPower(b, kid);
