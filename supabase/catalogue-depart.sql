@@ -1,6 +1,6 @@
 -- Catalogue de départ de chaque nouvelle famille : une copie des récompenses de la famille
 -- du super admin (la plus ancienne famille dont un super admin est administrateur).
--- Si cette famille n'existe pas ou n'a aucune récompense : Legami 24, livre 88, grand livre 159.
+-- Si cette famille n'existe pas ou n'a aucune récompense : Legami 2 €, livre 7,20 €, grand livre 8 €.
 -- Ce bloc est aussi dans schema.sql. Ce fichier sert si schema.sql a déjà été lancé :
 -- il peut être relancé sans risque. Les familles déjà créées ne changent pas.
 
@@ -29,9 +29,9 @@ begin
   else
     -- Sans modèle : catalogue fixe, au prix réel (1 point ≈ 0,08 € avec le budget par défaut)
     insert into rewards (family_id, title, icon, cost, price_eur) values
-      (fid, 'Un Legami',      '🖍️', 24,  1.95),
+      (fid, 'Un Legami',      '🖍️', 25,  2.00),
       (fid, 'Un livre',       '📘', 88,  7.20),
-      (fid, 'Un grand livre', '📕', 159, 13.00);
+      (fid, 'Un grand livre', '📕', 98,  8.00);
   end if;
   return fid;
 end $$;
