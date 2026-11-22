@@ -28,11 +28,17 @@ for (const f of fichiers) {
 }
 
 const config = readFileSync("config.js", "utf8");
-if (/service_role\s*[:=]|serviceRole/i.test(config.replace(/\/\/.*$/gm, ""))) erreurs.push("config.js : une clé service_role est déclarée");
+const sansCommentaires = config.split("\n").map(l => l.split("//")[0]).join("\n");
+if (/service_role *[:=]|serviceRole/i.test(sansCommentaires)) erreurs.push("config.js : une clé service_role est déclarée");
 const cle = (config.match(/supabaseAnonKey:\s*"([^"]*)"/) || [])[1] || "";
 if (cle && !/^(sb_publishable_|eyJ|COLLER)/.test(cle)) erreurs.push("config.js : la clé n'est pas une clé publique Supabase");
 const url = (config.match(/supabaseUrl:\s*"([^"]*)"/) || [])[1] || "";
 if (url && !/^https:\/\/[a-z0-9]+\.supabase\.co$|^COLLER/.test(url)) erreurs.push("config.js : l'adresse Supabase doit être en https://<projet>.supabase.co");
+// La règle de sécurité (CSP) de index.html n'autorise que ce projet Supabase : elle doit suivre config.js.
+const csp = (readFileSync("index.html", "utf8").match(/connect-src ([^;"]*)/) || [])[1] || "";
+const hote = url.replace(/^https:\/\//, "");
+if (url && !url.startsWith("COLLER") && !(csp.includes(`https://${hote}`) && csp.includes(`wss://${hote}`)))
+  erreurs.push(`index.html : connect-src doit autoriser https://${hote} et wss://${hote} (même projet que config.js)`);
 
 const kofi = (config.match(/kofi:\s*"([^"]*)"/) || [])[1] || "";
 if (kofi && !/^https:\/\/ko-fi\.com\/[A-Za-z0-9_]{1,64}\/?$/.test(kofi)) erreurs.push("config.js : le lien de dons doit être en https://ko-fi.com/<pseudo>");
