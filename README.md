@@ -28,10 +28,11 @@ Chaque famille a ses propres données : la base refuse à une famille de lire ou
 
 ## Utilisation
 
-1. Créer un compte (e-mail et mot de passe), puis confirmer l'adresse avec le lien reçu.
-2. Créer sa famille : on en devient l'administrateur.
-3. Dans **⚙️ Administration** : ajouter les enfants et leur personnage, régler les missions et leur poids (le site répartit environ 100 points par semaine et par enfant), les récompenses et le budget maximum par semaine et par enfant (8 € par défaut).
-4. Un autre adulte peut rejoindre la famille avec le **code d'invitation** affiché dans l'administration.
+1. Créer un compte (e-mail et mot de passe). Si « Confirm email » est activé dans Supabase, confirmer l'adresse avec le lien reçu (l'offre gratuite de Supabase n'envoie que quelques e-mails par heure).
+2. Créer sa famille : on en devient l'administrateur. Elle reçoit au départ une copie des récompenses de la famille du super admin.
+3. Dans **⚙️ Administration** : ajouter les enfants et leur personnage, régler les missions et leur poids (le site répartit environ 100 points par semaine et par enfant), le budget maximum par semaine et par enfant (8 € par défaut), et les récompenses : on donne leur prix en euros, le site le change en points avec la valeur d'un point.
+4. Un autre adulte peut rejoindre la famille avec le **code d'invitation** affiché dans l'administration (il entre comme simple membre).
+5. Un adulte peut **quitter** la famille ; un administrateur peut la **supprimer**. Sans famille, on revient au choix « Créer » ou « Rejoindre ».
 
 ## Sur téléphone et tablette
 
@@ -72,7 +73,7 @@ Un bouton « 💛 Soutenir le site » apparaît alors dans l'onglet Administrati
 | `supabase/catalogue-depart.sql` | catalogue de départ des nouvelles familles (copie des récompenses de la famille du super admin), pour une base déjà créée |
 | `supabase/quitter-famille.sql` | quitter ou supprimer une famille, pour une base déjà créée |
 | `supabase/une-fois-par-jour.sql` | chaque mission ne rapporte des points qu'une fois par jour, pour une base déjà créée |
-| `supabase/semaines-terminees.sql` | les points et l'objectif des semaines terminées ne changent plus, pour une base déjà créée |
+| `supabase/semaines-terminees.sql` | les points des semaines terminées ne changent plus, pour une base déjà créée |
 | `supabase/droits.sql` | ajoute les droits d'accès aux tables à une base déjà créée |
 | `supabase/super-admin.sql` | ajoute le super admin à une base déjà créée |
 | `supabase/tests/` | tests de séparation des familles (lancés par la CI) |

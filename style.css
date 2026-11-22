@@ -128,9 +128,6 @@ h3{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:v
 .sub{color:var(--soft);font-weight:700;margin:2px 0 0}
 .w-goal{text-align:right;font-weight:800;color:var(--soft);font-size:13px;flex:none}
 .w-goal b{display:block;font-family:var(--display);font-size:28px;color:var(--ink);line-height:1;font-variant-numeric:tabular-nums}
-.w-bar{height:18px;background:var(--line);border-radius:99px;overflow:hidden}
-.w-bar i{display:block;height:100%;background:var(--c);border-radius:99px}
-.w-barlbl{display:flex;justify-content:space-between;font-size:14px;font-weight:800;color:var(--soft);margin-top:4px}
 .w-days{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
 .w-day{background:var(--cs);border-radius:12px;padding:6px 2px;display:grid;justify-items:center;gap:4px;font-size:12px;font-weight:800}
 .w-day.today{outline:3px solid var(--gold)}
@@ -167,11 +164,7 @@ h3{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:v
 .w-wk{display:grid;gap:4px;min-width:0}
 .w-row{display:flex;justify-content:space-between;gap:8px;font-weight:800;font-size:14px;flex-wrap:wrap}
 .w-n{color:var(--c)}
-.w-wk .w-bar{height:10px}
 .w-note{font-size:13px;color:var(--soft);font-weight:700}
-.pill{display:inline-block;border-radius:99px;padding:1px 9px;font-size:12px;font-weight:800}
-.pill.yes{background:var(--ok);color:#fff}
-.pill.no{background:var(--line);color:var(--soft)}
 .w-empty{color:var(--soft);font-weight:700;margin:0}
 @media (max-width:640px){.w-week{grid-template-columns:1fr}}
 
