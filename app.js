@@ -4,6 +4,7 @@
   "use strict";
 
   // ───────── Outils ─────────
+  const L = window.I18N, t = L.t, shown = L.shown;
   const $ = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
   const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -12,12 +13,12 @@
   function toast(text) { const t = $("#toast"); t.textContent = text; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => (t.hidden = true), 2600); }
   const pad = n => String(n).padStart(2, "0");
   const dayKey = ms => { const d = new Date(ms == null ? Date.now() : ms); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); };
-  const shortDate = d => { try { return new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }); } catch { return dayKey(d); } };
+  const shortDate = d => { try { return new Date(d).toLocaleDateString(L.locale, { day: "numeric", month: "short" }); } catch { return dayKey(d); } };
   const monday = ms => { const d = new Date(ms); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d; };
   const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
   const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch { /* sans effet */ } } };
   const reduceMotion = () => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch { return false; } };
-  const OOPS = "Oups, ce n'est pas enregistré. Vérifie la connexion et réessaie.";
+  const OOPS = t("Oups, ce n'est pas enregistré. Vérifie la connexion et réessaie.");
 
   // Par défaut, un enfant peut gagner au maximum 8 € par semaine s'il fait toutes ses missions.
   const DEFAULT_WEEKLY_BUDGET = 8;
@@ -30,13 +31,12 @@
   };
   const REWARD_ICONS = ["🎁", "🖍️", "📘", "📕", "🧸", "🍫", "🍦", "🎮", "📺", "🎨", "⚽", "🎬", "🍕", "🛝", "⭐", "🎟️"];
   const TASK_ICONS = ["🧸", "✏️", "🚿", "🧹", "🍽️", "🐶", "🌱", "📚", "🎹", "🚲", "🛏️", "🧺", "⭐"];
-  const MONTHS = ["Janv.", "Févr.", "Mars", "Avr.", "Mai", "Juin", "Juil.", "Août", "Sept.", "Oct.", "Nov.", "Déc."];
-  const DAYN = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+  const MONTHS = L.months, DAYN = L.days;
 
   // ───────── Connexion à Supabase ─────────
   const CFG = window.POINTS_CONFIG || {};
   if (!window.supabase || !CFG.supabaseUrl || /VOTRE-PROJET/.test(CFG.supabaseUrl) || /VOTRE-CLE/.test(CFG.supabaseAnonKey || "")) {
-    msg("#status", "Le site n'est pas encore relié à sa base de données. Il faut remplir le fichier config.js.");
+    msg("#status", t("Le site n'est pas encore relié à sa base de données. Il faut remplir le fichier config.js."));
     return;
   }
   const sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey);
@@ -86,7 +86,7 @@
   };
   const isAdmin = () => S.role === "admin";
   const kidById = id => S.children.find(k => k.id === id);
-  const charOf = kid => window.characterById(kid && kid.character);
+  const charOf = kid => L.char(window.characterById(kid && kid.character));
   const total = kidId => S.events.reduce((a, e) => a + (e.child_id === kidId ? e.points : 0), 0);
   const kidStyle = kid => `--c:${charOf(kid).color}`;
 
@@ -105,7 +105,7 @@
     authMode = m;
     $("#tab-login").setAttribute("aria-selected", m === "login");
     $("#tab-signup").setAttribute("aria-selected", m === "signup");
-    $("#auth-submit").textContent = m === "login" ? "Se connecter" : "Créer mon compte";
+    $("#auth-submit").textContent = t(m === "login" ? "Se connecter" : "Créer mon compte");
     $("#auth-password").autocomplete = m === "login" ? "current-password" : "new-password";
     show("#auth-hint", m === "signup"); show("#auth-forgot", m === "login");
     msg("#auth-err"); msg("#auth-ok");
@@ -117,36 +117,36 @@
   $("#auth-form").addEventListener("submit", async e => {
     e.preventDefault(); msg("#auth-err"); msg("#auth-ok");
     const email = $("#auth-email").value.trim(), password = $("#auth-password").value;
-    if (!/^\S+@\S+\.\S+$/.test(email)) return msg("#auth-err", "Écris une adresse e-mail valide.");
-    if (password.length < 8) return msg("#auth-err", "Le mot de passe doit avoir au moins 8 caractères.");
+    if (!/^\S+@\S+\.\S+$/.test(email)) return msg("#auth-err", t("Écris une adresse e-mail valide."));
+    if (password.length < 8) return msg("#auth-err", t("Le mot de passe doit avoir au moins 8 caractères."));
     const btn = $("#auth-submit"); btn.disabled = true;
     try {
       if (authMode === "login") {
         const { error } = await sb.auth.signInWithPassword({ email, password });
-        if (error) msg("#auth-err", /confirm/i.test(error.message) ? "Ton adresse n'est pas encore confirmée. Ouvre l'e-mail reçu et clique sur le lien." : "E-mail ou mot de passe incorrect.");
+        if (error) msg("#auth-err", /confirm/i.test(error.message) ? t("Ton adresse n'est pas encore confirmée. Ouvre l'e-mail reçu et clique sur le lien.") : t("E-mail ou mot de passe incorrect."));
       } else {
         const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: backUrl() } });
-        if (error) msg("#auth-err", /registered|exists/i.test(error.message) ? "Un compte existe déjà avec cette adresse. Connecte-toi." : "Le compte n'a pas pu être créé : " + error.message);
-        else if (!data.session) { msg("#auth-ok", "Compte créé ! Ouvre l'e-mail que tu viens de recevoir et clique sur le lien pour le confirmer, puis connecte-toi."); setAuthMode("login"); msg("#auth-ok", "Compte créé ! Ouvre l'e-mail que tu viens de recevoir et clique sur le lien pour le confirmer, puis connecte-toi."); }
+        if (error) msg("#auth-err", /registered|exists/i.test(error.message) ? t("Un compte existe déjà avec cette adresse. Connecte-toi.") : t("Le compte n'a pas pu être créé : {msg}", { msg: error.message }));
+        else if (!data.session) { msg("#auth-ok", t("Compte créé ! Ouvre l'e-mail que tu viens de recevoir et clique sur le lien pour le confirmer, puis connecte-toi.")); setAuthMode("login"); msg("#auth-ok", t("Compte créé ! Ouvre l'e-mail que tu viens de recevoir et clique sur le lien pour le confirmer, puis connecte-toi.")); }
       }
-    } catch { msg("#auth-err", "Pas de connexion au serveur. Réessaie dans un instant."); }
+    } catch { msg("#auth-err", t("Pas de connexion au serveur. Réessaie dans un instant.")); }
     btn.disabled = false;
   });
   $("#auth-forgot").addEventListener("click", async () => {
     msg("#auth-err"); msg("#auth-ok");
     const email = $("#auth-email").value.trim();
-    if (!/^\S+@\S+\.\S+$/.test(email)) return msg("#auth-err", "Écris d'abord ton adresse e-mail, puis clique sur « Mot de passe oublié ? ».");
+    if (!/^\S+@\S+\.\S+$/.test(email)) return msg("#auth-err", t("Écris d'abord ton adresse e-mail, puis clique sur « Mot de passe oublié ? »."));
     const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: backUrl() });
-    if (error) msg("#auth-err", "L'e-mail n'a pas pu être envoyé. Réessaie plus tard.");
-    else msg("#auth-ok", "Si un compte existe avec cette adresse, un e-mail pour changer le mot de passe vient d'être envoyé.");
+    if (error) msg("#auth-err", t("L'e-mail n'a pas pu être envoyé. Réessaie plus tard."));
+    else msg("#auth-ok", t("Si un compte existe avec cette adresse, un e-mail pour changer le mot de passe vient d'être envoyé."));
   });
   $("#recover-form").addEventListener("submit", async e => {
     e.preventDefault();
     const password = $("#recover-password").value;
-    if (password.length < 8) return msg("#recover-err", "Au moins 8 caractères.");
+    if (password.length < 8) return msg("#recover-err", t("Au moins 8 caractères."));
     const { error } = await sb.auth.updateUser({ password });
-    if (error) return msg("#recover-err", "Le mot de passe n'a pas pu être changé : " + error.message);
-    toast("Mot de passe changé ✓"); S.recovering = false;
+    if (error) return msg("#recover-err", t("Le mot de passe n'a pas pu être changé : {msg}", { msg: error.message }));
+    toast(t("Mot de passe changé ✓")); S.recovering = false;
     const { data } = await sb.auth.getSession(); handleSession(data.session, true);
   });
   $("#logout").addEventListener("click", async () => { await sb.auth.signOut(); });
@@ -177,9 +177,9 @@
 
   // ───────── Familles ─────────
   async function loadFamilies(preferId) {
-    msg("#status", "Chargement…");
+    msg("#status", t("Chargement…"));
     const { data, error } = await sb.from("family_members").select("family_id, role, families(id, name, invite_code, settings)").eq("user_id", S.user.id);
-    if (error) { msg("#status", "Impossible de lire tes familles. Recharge la page."); return; }
+    if (error) { msg("#status", t("Impossible de lire tes familles. Recharge la page.")); return; }
     S.memberships = (data || []).filter(m => m.families);
     msg("#status");
     if (!S.memberships.length) { stopRealtime(); S.family = null; screen("onboard"); return; }
@@ -202,7 +202,7 @@
   async function enterFamily(fam, role, visiting) {
     S.family = fam; S.role = role; S.visiting = visiting; S.adminFilled = false; S.editingKid = null;
     $("#title").textContent = S.family.name;
-    $("#visit-text").textContent = visiting ? `🛡️ Mode super admin : tu es dans la famille « ${fam.name} ».` : "";
+    $("#visit-text").textContent = visiting ? t("🛡️ Mode super admin : tu es dans la famille « {name} ».", { name: fam.name }) : "";
     show("#visit", visiting);
     await loadAll();
     startRealtime();
@@ -230,12 +230,12 @@
   function setSalon(on, byClick) {
     document.body.classList.toggle("salon", on);
     $("#salon-btn").setAttribute("aria-pressed", String(on));
-    $("#salon-btn").textContent = on ? "📺 Quitter le mode salon" : "📺 Mode salon";
+    $("#salon-btn").textContent = t(on ? "📺 Quitter le mode salon" : "📺 Mode salon");
     store.set("points-salon", on ? "1" : "");
     if (on) {
       keepAwake(); armIdle();
       if (byClick && document.documentElement.requestFullscreen && !document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
-      if (byClick) toast("wakeLock" in navigator ? "Mode salon : l'écran reste allumé 📺" : "Ce navigateur ne peut pas garder l'écran allumé : mets la mise en veille de la tablette sur « Jamais ».");
+      if (byClick) toast("wakeLock" in navigator ? t("Mode salon : l'écran reste allumé 📺") : t("Ce navigateur ne peut pas garder l'écran allumé : mets la mise en veille de la tablette sur « Jamais »."));
     } else {
       clearTimeout(salon.idle);
       if (salon.lock) salon.lock.release().catch(() => {});
@@ -253,18 +253,18 @@
     if (!S.superAdmin) return;
     screen("super"); msg("#super-err");
     const { data, error } = await sb.rpc("all_families");
-    if (error) { $("#super-list").textContent = ""; return msg("#super-err", "Impossible de lire la liste des familles."); }
+    if (error) { $("#super-list").textContent = ""; return msg("#super-err", t("Impossible de lire la liste des familles.")); }
     const rows = (data || []).map(f => `<tr><td>${esc(f.name)}</td><td>${Number(f.adults)}</td><td>${Number(f.kids)}</td><td>${Number(f.events)}</td>
-      <td>${f.last_event ? shortDate(Date.parse(f.last_event)) : "—"}</td><td><button type="button" class="btn small" data-visit="${esc(f.id)}">Ouvrir</button></td></tr>`).join("");
+      <td>${f.last_event ? shortDate(Date.parse(f.last_event)) : "—"}</td><td><button type="button" class="btn small" data-visit="${esc(f.id)}">${t("Ouvrir")}</button></td></tr>`).join("");
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
-    $("#super-list").innerHTML = `<thead><tr><th>Famille</th><th>Adultes</th><th>Enfants</th><th>Points notés</th><th>Dernière activité</th><th></th></tr></thead>
-      <tbody>${rows || `<tr><td colspan="6">Aucune famille pour l'instant.</td></tr>`}</tbody>`;
+    $("#super-list").innerHTML = `<thead><tr><th>${t("Famille")}</th><th>${t("Adultes")}</th><th>${t("Enfants")}</th><th>${t("Points notés")}</th><th>${t("Dernière activité")}</th><th></th></tr></thead>
+      <tbody>${rows || `<tr><td colspan="6">${t("Aucune famille pour l'instant.")}</td></tr>`}</tbody>`;
   }
   async function visitFamily(fid) {
     const mine = S.memberships.find(x => x.family_id === fid);
     if (mine) return openFamily(fid);
     const { data, error } = await sb.from("families").select("id, name, invite_code, settings").eq("id", fid).single();
-    if (error || !data) return msg("#super-err", "Cette famille n'a pas pu être ouverte.");
+    if (error || !data) return msg("#super-err", t("Cette famille n'a pas pu être ouverte."));
     await enterFamily(data, "admin", true);
   }
   $("#super-btn").addEventListener("click", openSuper);
@@ -275,20 +275,20 @@
   $("#create-form").addEventListener("submit", async e => {
     e.preventDefault(); msg("#create-err");
     const name = $("#create-name").value.trim();
-    if (!name) return msg("#create-err", "Donne un nom à ta famille.");
+    if (!name) return msg("#create-err", t("Donne un nom à ta famille."));
     const { data, error } = await sb.rpc("create_family", { fname: name.slice(0, 60) });
-    if (error) return msg("#create-err", "La famille n'a pas pu être créée. Réessaie.");
-    toast("Famille créée ! Ajoute maintenant les enfants.");
+    if (error) return msg("#create-err", t("La famille n'a pas pu être créée. Réessaie."));
+    toast(t("Famille créée ! Ajoute maintenant les enfants."));
     await loadFamilies(data);
     location.hash = "#admin";
   });
   $("#join-form").addEventListener("submit", async e => {
     e.preventDefault(); msg("#join-err");
     const code = $("#join-code").value.trim().toUpperCase();
-    if (code.length < 6) return msg("#join-err", "Le code a 8 lettres et chiffres.");
+    if (code.length < 6) return msg("#join-err", t("Le code a 8 lettres et chiffres."));
     const { data, error } = await sb.rpc("join_family", { code });
-    if (error) return msg("#join-err", /bad_code/.test(error.message) ? "Ce code n'existe pas. Vérifie-le avec le parent qui te l'a donné." : "Impossible de rejoindre la famille. Réessaie.");
-    toast("Bienvenue dans la famille !");
+    if (error) return msg("#join-err", /bad_code/.test(error.message) ? t("Ce code n'existe pas. Vérifie-le avec le parent qui te l'a donné.") : t("Impossible de rejoindre la famille. Réessaie."));
+    toast(t("Bienvenue dans la famille !"));
     await loadFamilies(data);
   });
 
@@ -321,9 +321,9 @@
     if (error) throw error; Object.assign(S.family, data); $("#title").textContent = S.family.name;
   }
   async function loadAll() {
-    msg("#status", "Chargement des points…");
+    msg("#status", t("Chargement des points…"));
     try { await Promise.all([fetchChildren(), fetchRewards(), fetchEvents(), fetchChecks()]); msg("#status"); }
-    catch { msg("#status", "Impossible de lire les points pour l'instant. Recharge la page."); }
+    catch { msg("#status", t("Impossible de lire les points pour l'instant. Recharge la page.")); }
   }
   const FETCHERS = { events: fetchEvents, checks: fetchChecks, children: fetchChildren, rewards: fetchRewards, families: fetchFamily };
   const pending = new Set(); let reloadTimer = null;
@@ -357,7 +357,7 @@
     const { error } = await sb.from("events").insert({ family_id: S.family.id, child_id: childId, points, label: String(label).slice(0, 60) });
     S.busy = false;
     if (error) {
-      if (/deja_fait/.test(error.message || "")) { toast("Déjà fait aujourd'hui ✓ Reviens demain !"); await fetchEvents(); render(); }
+      if (/deja_fait/.test(error.message || "")) { toast(t("Déjà fait aujourd'hui ✓ Reviens demain !")); await fetchEvents(); render(); }
       else toast(OOPS);
       return false;
     }
@@ -368,7 +368,7 @@
     const { error } = await sb.from("events").delete().eq("id", id);
     S.busy = false;
     if (error) return toast(OOPS);
-    await fetchEvents(); render(); toast("Annulé");
+    await fetchEvents(); render(); toast(t("Annulé"));
   }
   async function toggleCheck(childId, item) {
     if (S.busy) return; S.busy = true;
@@ -397,7 +397,7 @@
     if (isAdmin()) renderAdminLists();
   }
   function emptyKids() {
-    return `<div class="empty">Aucun enfant pour l'instant.${isAdmin() ? ` Ajoute-les dans <a href="#admin">⚙️ Administration</a>.` : " Un parent administrateur peut les ajouter."}</div>`;
+    return `<div class="empty">${t("Aucun enfant pour l'instant.")}${isAdmin() ? t(" Ajoute-les dans {link}.", { link: `<a href="#admin">${t("⚙️ Administration")}</a>` }) : t(" Un parent administrateur peut les ajouter.")}</div>`;
   }
   function kidHead(kid, right) {
     const c = charOf(kid);
@@ -418,25 +418,25 @@
     $("#kids").innerHTML = S.children.length ? S.children.map(k => {
       const hist = S.events.filter(e => e.child_id === k.id).sort((a, b) => b.at - a.at).slice(0, 5);
       return `<article class="kid" style="${kidStyle(k)}">
-        ${kidHead(k, `<div class="total"><b>${total(k.id)}</b><span>points</span></div>`)}
-        <div><h3>Gagner des points</h3><div class="earn" style="margin-top:8px">
+        ${kidHead(k, `<div class="total"><b>${total(k.id)}</b><span>${t("points")}</span></div>`)}
+        <div><h3>${t("Gagner des points")}</h3><div class="earn" style="margin-top:8px">
           ${buttons.map(b => {
             const fait = doneToday(k.id, b.label), routine = b.key.startsWith("r:");
-            const bas = fait ? "✓ fait aujourd'hui" : routine ? "Cocher mes missions →" : "+" + b.pts;
-            return `<button class="btn-earn ${fait ? "fait" : ""} ${routine && !fait ? "aller" : ""}" data-earn="${k.id}|${b.key}" ${fait ? "disabled" : ""}><span class="ico" aria-hidden="true">${esc(b.icon)}</span>${esc(b.label)}<span class="pts">${bas}</span></button>`;
+            const bas = fait ? t("✓ fait aujourd'hui") : routine ? t("Cocher mes missions →") : "+" + b.pts;
+            return `<button class="btn-earn ${fait ? "fait" : ""} ${routine && !fait ? "aller" : ""}" data-earn="${k.id}|${b.key}" ${fait ? "disabled" : ""}><span class="ico" aria-hidden="true">${esc(b.icon)}</span>${esc(shown(b.label))}<span class="pts">${bas}</span></button>`;
           }).join("")}
         </div></div>
-        <div><h3>Derniers points</h3>${hist.length ? `<ul class="history" style="margin-top:8px">${hist.map(e => `<li><span>${esc(e.label)} <span class="when">${shortDate(e.at)}</span></span><span class="${e.points > 0 ? "plus" : "minus"}">${e.points > 0 ? "+" : ""}${e.points}</span></li>`).join("")}</ul>` : `<p class="hint" style="margin-top:8px">Pas encore de points. Appuie sur un bouton au-dessus !</p>`}</div>
-        <button class="btn-undo" data-undo="${k.id}" ${hist.length ? "" : "disabled"}>↩︎ Annuler le dernier</button>
+        <div><h3>${t("Derniers points")}</h3>${hist.length ? `<ul class="history" style="margin-top:8px">${hist.map(e => `<li><span>${esc(shown(e.label))} <span class="when">${shortDate(e.at)}</span></span><span class="${e.points > 0 ? "plus" : "minus"}">${e.points > 0 ? "+" : ""}${e.points}</span></li>`).join("")}</ul>` : `<p class="hint" style="margin-top:8px">${t("Pas encore de points. Appuie sur un bouton au-dessus !")}</p>`}</div>
+        <button class="btn-undo" data-undo="${k.id}" ${hist.length ? "" : "disabled"}>${t("↩︎ Annuler le dernier")}</button>
       </article>`;
     }).join("") : emptyKids();
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
-    $("#rules").innerHTML = `<b>Les règles, une fois par jour :</b> ${buttons.map(b => `${esc(b.label.toLowerCase())} = <b>${b.pts} point${b.pts > 1 ? "s" : ""}</b>`).join(" · ")}`;
+    $("#rules").innerHTML = `<b>${t("Les règles, une fois par jour :")}</b> ${buttons.map(b => `${esc(shown(b.label).toLowerCase())} = <b>${b.pts} point${b.pts > 1 ? "s" : ""}</b>`).join(" · ")}`;
   }
 
   function renderTodo() {
     const st = settings();
-    try { $("#today").textContent = "Aujourd'hui : " + new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }); } catch { /* sans effet */ }
+    try { $("#today").textContent = t("Aujourd'hui : {date}", { date: new Date().toLocaleDateString(L.locale, { weekday: "long", day: "numeric", month: "long" }) }); } catch { /* sans effet */ }
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#todo-kids").innerHTML = S.children.length ? S.children.map(k => `<article class="kid" style="${kidStyle(k)}">
       ${kidHead(k, "")}
@@ -446,12 +446,12 @@
         const done = items.filter((_, i) => S.checks.has(k.id + "|" + keyOf(i))).length;
         const all = items.length > 0 && done === items.length;
         const given = doneToday(k.id, r.label);
-        return `<div class="block"><div class="block-h"><b>${esc(r.icon)} ${esc(r.label)}</b><span class="p">${r.points} points · ${done} / ${items.length} cases</span></div>
+        return `<div class="block"><div class="block-h"><b>${esc(r.icon)} ${esc(shown(r.label))}</b><span class="p">${t("{n} points · {done} / {all} cases", { n: r.points, done, all: items.length })}</span></div>
           ${items.map((lbl, i) => { const on = S.checks.has(k.id + "|" + keyOf(i));
-            return `<button class="check ${on ? "done" : ""}" data-check="${k.id}" data-item="${esc(keyOf(i))}" aria-pressed="${on}"><span class="box">${on ? "✓" : ""}</span><span class="lbl">${esc(lbl)}</span></button>`; }).join("")}
-          ${given ? `<p class="given">+${r.points} points gagnés ce ${part === "matin" ? "matin" : "soir"} ! 🎉</p>${(() => { const ck = "unbonus|" + k.id + "|" + part, conf = S.confirmKey === ck;
-              return `<button class="btn-undo ${conf ? "confirm" : ""}" data-unbonus="${k.id}|${part}">${conf ? "Sûr ? Touche encore pour annuler" : `↩︎ Annuler ces ${r.points} points`}</button>`; })()}`
-            : `<button class="btn-bonus" data-bonus="${k.id}|${part}" ${all ? "" : "disabled"}>${all ? `Tout est fait ! Prendre mes ${r.points} points` : `Encore ${items.length - done} à faire`}</button>`}
+            return `<button class="check ${on ? "done" : ""}" data-check="${k.id}" data-item="${esc(keyOf(i))}" aria-pressed="${on}"><span class="box">${on ? "✓" : ""}</span><span class="lbl">${esc(shown(lbl))}</span></button>`; }).join("")}
+          ${given ? `<p class="given">${t(part === "matin" ? "+{n} points gagnés ce matin ! 🎉" : "+{n} points gagnés ce soir ! 🎉", { n: r.points })}</p>${(() => { const ck = "unbonus|" + k.id + "|" + part, conf = S.confirmKey === ck;
+              return `<button class="btn-undo ${conf ? "confirm" : ""}" data-unbonus="${k.id}|${part}">${conf ? t("Sûr ? Touche encore pour annuler") : t("↩︎ Annuler ces {n} points", { n: r.points })}</button>`; })()}`
+            : `<button class="btn-bonus" data-bonus="${k.id}|${part}" ${all ? "" : "disabled"}>${all ? t("Tout est fait ! Prendre mes {n} points", { n: r.points }) : t("Encore {n} à faire", { n: items.length - done })}</button>`}
         </div>`;
       }).join("")}
     </article>`).join("") : emptyKids();
@@ -464,13 +464,13 @@
     $("#shop-items").innerHTML = S.rewards.length ? S.rewards.map(r => {
       const kids = S.children.filter(k => !r.child_ids || !r.child_ids.length || r.child_ids.includes(k.id));
       return `<article class="item"><div class="item-ico" aria-hidden="true">${esc(r.icon)}</div>
-        <h3 class="item-t">${esc(r.title)}</h3><p class="price">${r.cost} points</p>
+        <h3 class="item-t">${esc(shown(r.title))}</h3><p class="price">${t("{n} points", { n: r.cost })}</p>
         <div class="buy-row">${kids.map(k => { const tot = total(k.id), ok = tot >= r.cost, key = "shop|" + k.id + "|" + r.id, conf = S.confirmKey === key;
-          return `<button class="btn-buy ${conf ? "confirm" : ""}" style="${kidStyle(k)}" data-buy="${k.id}|${r.id}" ${ok ? "" : "disabled"}>${conf ? "Sûr ? Oui !" : ok ? "Acheter pour " + esc(k.name) : esc(k.name) + " : encore " + (r.cost - tot)}</button>`; }).join("")}</div></article>`;
-    }).join("") : `<div class="empty">Le catalogue est vide.${isAdmin() ? ` Ajoute des récompenses dans <a href="#admin">⚙️ Administration</a>.` : ""}</div>`;
+          return `<button class="btn-buy ${conf ? "confirm" : ""}" style="${kidStyle(k)}" data-buy="${k.id}|${r.id}" ${ok ? "" : "disabled"}>${conf ? t("Sûr ? Oui !") : ok ? t("Acheter pour {name}", { name: esc(k.name) }) : t("{name} : encore {n}", { name: esc(k.name), n: r.cost - tot })}</button>`; }).join("")}</div></article>`;
+    }).join("") : `<div class="empty">${t("Le catalogue est vide.")}${isAdmin() ? t(" Ajoute des récompenses dans {link}.", { link: `<a href="#admin">${t("⚙️ Administration")}</a>` }) : ""}</div>`;
     const bought = S.events.filter(e => e.points < 0).sort((a, b) => b.at - a.at).slice(0, 10);
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
-    $("#shop-history").innerHTML = bought.length ? bought.map(e => `<li><span>${esc((kidById(e.child_id) || {}).name || "?")} : ${esc(e.label)} <span class="when">${shortDate(e.at)}</span></span><span class="minus">${e.points}</span></li>`).join("") : `<li><span>Rien acheté pour l'instant.</span></li>`;
+    $("#shop-history").innerHTML = bought.length ? bought.map(e => `<li><span>${esc((kidById(e.child_id) || {}).name || "?")} : ${esc(shown(e.label))} <span class="when">${shortDate(e.at)}</span></span><span class="minus">${e.points}</span></li>`).join("") : `<li><span>${t("Rien acheté pour l'instant.")}</span></li>`;
   }
 
   // ───── Semaines et année ─────
@@ -492,7 +492,7 @@
 
   function renderWeeks() {
     const st = weekStats(), todayK = dayKey(), mon = monday(Date.now());
-    $("#wk-range").textContent = `Du ${shortDate(mon)} au ${shortDate(addDays(mon, 6))}`;
+    $("#wk-range").textContent = t("Du {from} au {to}", { from: shortDate(mon), to: shortDate(addDays(mon, 6)) });
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#wk-now").innerHTML = S.children.length ? S.children.map(k => {
       const goal = k.weekly_goal || 25, tot = weekTotal(st, k.id, mon), pct = Math.min(100, Math.round(tot / goal * 100));
@@ -502,10 +502,10 @@
         return `<div class="w-day ${dk === todayK ? "today" : ""} ${fut ? "future" : ""}">${n}<div class="w-dots"><i class="w-dot ${m.m ? "ok" : ""}"></i><i class="w-dot ${m.s ? "ok" : ""}"></i></div><span class="w-pts">${fut ? "·" : p ? "+" + p : "0"}</span></div>`; }).join("");
       const b = st.buys[k.id][dayKey(mon)];
       return `<article class="kid" style="${kidStyle(k)}">
-        ${kidHead(k, `<div class="w-goal"><b>${tot} / ${goal}</b>cette semaine</div>`)}
-        <div><div class="w-bar"><i style="width:${pct}%"></i></div><div class="w-barlbl"><span>${tot >= goal ? "Objectif atteint ! 🎉" : "Encore " + (goal - tot) + " points"}</span><span>${pct} %</span></div></div>
+        ${kidHead(k, `<div class="w-goal"><b>${tot} / ${goal}</b>${t("cette semaine")}</div>`)}
+        <div><div class="w-bar"><i style="width:${pct}%"></i></div><div class="w-barlbl"><span>${tot >= goal ? t("Objectif atteint ! 🎉") : t("Encore {n} points", { n: goal - tot })}</span><span>${pct} %</span></div></div>
         <div class="w-days">${days}</div>
-        <div class="w-stats"><div class="w-stat"><b>${done}/${poss}</b><span>missions faites</span></div><div class="w-stat"><b>${best}</b><span>meilleur jour</span></div><div class="w-stat"><b>${b ? esc(b.join(", ")) : "—"}</b><span>acheté</span></div></div>
+        <div class="w-stats"><div class="w-stat"><b>${done}/${poss}</b><span>${t("missions faites")}</span></div><div class="w-stat"><b>${best}</b><span>${t("meilleur jour")}</span></div><div class="w-stat"><b>${b ? esc(b.map(shown).join(", ")) : "—"}</b><span>${t("acheté")}</span></div></div>
       </article>`;
     }).join("") : emptyKids();
 
@@ -516,22 +516,22 @@
     const gw = iw / Math.max(cw.length, 1), bw = Math.max(6, Math.min(26, gw / (kids.length + 1.2)));
     const vals = cw.map(w => kids.map(k => weekTotal(st, k.id, w)));
     const max = Math.max(40, Math.ceil(Math.max(0, ...vals.flat()) / 10) * 10), y = v => pt + ih - v / max * ih;
-    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Points gagnés par semaine">`;
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${t("Points gagnés par semaine")}">`;
     for (let v = 0; v <= max; v += max > 80 ? 20 : 10) s += `<line x1="${pl}" x2="${W - 10}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${pl - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--soft)">${v}</text>`;
     cw.forEach((w, i) => { const cx = pl + gw * i + gw / 2, last = i === cw.length - 1, x0 = cx - (kids.length * (bw + 4)) / 2;
-      kids.forEach((k, j) => { const v = vals[i][j], x = x0 + j * (bw + 4); s += `<rect x="${x}" y="${y(v)}" width="${bw}" height="${y(0) - y(v)}" rx="5" fill="${charOf(k).color}"><title>${esc(k.name)} : ${v} points</title></rect>${bw >= 14 ? `<text x="${x + bw / 2}" y="${y(v) - 5}" text-anchor="middle" font-size="11" font-weight="800" fill="var(--ink)">${v}</text>` : ""}`; });
-      s += `<text x="${cx}" y="${H - 12}" text-anchor="middle" font-size="11" font-weight="${last ? 800 : 600}" fill="var(--soft)">${last ? "Cette semaine" : shortDate(w)}</text>`; });
+      kids.forEach((k, j) => { const v = vals[i][j], x = x0 + j * (bw + 4); s += `<rect x="${x}" y="${y(v)}" width="${bw}" height="${y(0) - y(v)}" rx="5" fill="${charOf(k).color}"><title>${t("{name} : {n} points", { name: esc(k.name), n: v })}</title></rect>${bw >= 14 ? `<text x="${x + bw / 2}" y="${y(v) - 5}" text-anchor="middle" font-size="11" font-weight="800" fill="var(--ink)">${v}</text>` : ""}`; });
+      s += `<text x="${cx}" y="${H - 12}" text-anchor="middle" font-size="11" font-weight="${last ? 800 : 600}" fill="var(--soft)">${last ? t("Cette semaine") : shortDate(w)}</text>`; });
     let lx = pl; kids.forEach(k => { s += `<rect x="${lx}" y="4" width="10" height="10" rx="3" fill="${charOf(k).color}"/><text x="${lx + 14}" y="13" font-size="11" font-weight="800" fill="var(--ink)">${esc(k.name)}</text>`; lx += 24 + k.name.length * 7; });
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#wk-chart").innerHTML = s + "</svg>";
 
     const past = weeks.slice(0, -1).reverse();
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
-    $("#wk-past").innerHTML = past.length && kids.length ? past.map(w => `<article class="w-week"><div class="w-when">Semaine<small>${shortDate(w)} – ${shortDate(addDays(w, 6))}</small></div><div class="w-week-kids">
+    $("#wk-past").innerHTML = past.length && kids.length ? past.map(w => `<article class="w-week"><div class="w-when">${t("Semaine")}<small>${shortDate(w)} – ${shortDate(addDays(w, 6))}</small></div><div class="w-week-kids">
       ${kids.map(k => { const goal = k.weekly_goal || 25, p = weekTotal(st, k.id, w), ok = p >= goal, b = st.buys[k.id][dayKey(w)];
-        return `<div class="w-wk" style="${kidStyle(k)}"><div class="w-row"><span class="w-n">${esc(k.name)}</span><span>${p} pts <span class="pill ${ok ? "yes" : "no"}">${ok ? "objectif ✓" : "pas atteint"}</span></span></div>
-        <div class="w-bar"><i style="width:${Math.min(100, p / goal * 100)}%"></i></div><span class="w-note">${b ? "🎁 " + esc(b.join(", ")) : "Rien acheté"}</span></div>`; }).join("")}</div></article>`).join("")
-      : `<p class="w-empty">Pas encore de semaine terminée. La première apparaîtra ici lundi prochain.</p>`;
+        return `<div class="w-wk" style="${kidStyle(k)}"><div class="w-row"><span class="w-n">${esc(k.name)}</span><span>${p} pts <span class="pill ${ok ? "yes" : "no"}">${ok ? t("objectif ✓") : t("pas atteint")}</span></span></div>
+        <div class="w-bar"><i style="width:${Math.min(100, p / goal * 100)}%"></i></div><span class="w-note">${b ? "🎁 " + esc(b.map(shown).join(", ")) : t("Rien acheté")}</span></div>`; }).join("")}</div></article>`).join("")
+      : `<p class="w-empty">${t("Pas encore de semaine terminée. La première apparaîtra ici lundi prochain.")}</p>`;
     renderYear(st);
   }
 
@@ -543,32 +543,32 @@
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#year").innerHTML = S.children.length ? S.children.map(k => {
       const col = charOf(k).color;
-      let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Points de ${esc(k.name)} jour par jour en ${yr}">`;
+      let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${t("Points de {name} jour par jour en {year}", { name: esc(k.name), year: yr })}">`;
       MONTHS.forEach((m, i) => { const c = Math.floor((monday(new Date(yr, i, 1)) - start) / 864e5 / 7 + 0.01); svg += `<text x="${pl + c * (cell + gap)}" y="11" font-size="10" font-weight="700" fill="var(--soft)">${m}</text>`; });
-      ["Lun", "", "Mer", "", "Ven", "", "Dim"].forEach((n, r) => { if (n) svg += `<text x="${pl - 6}" y="${ptop + r * (cell + gap) + 10}" text-anchor="end" font-size="9" fill="var(--soft)">${n}</text>`; });
+      [DAYN[0], "", DAYN[2], "", DAYN[4], "", DAYN[6]].forEach((n, r) => { if (n) svg += `<text x="${pl - 6}" y="${ptop + r * (cell + gap) + 10}" text-anchor="end" font-size="9" fill="var(--soft)">${n}</text>`; });
       let yearTot = 0; const mt = Array(12).fill(0);
       for (let d = new Date(jan1); d.getFullYear() === yr; d = addDays(d, 1)) {
         const dk = dayKey(d), p = st.earned[k.id][dk] || 0, c = Math.floor((monday(d) - start) / 864e5 / 7 + 0.01), r = (d.getDay() + 6) % 7, x = pl + c * (cell + gap), yy = ptop + r * (cell + gap);
         yearTot += p; mt[d.getMonth()] += p;
-        svg += `<rect x="${x}" y="${yy}" width="${cell}" height="${cell}" rx="3" fill="var(--line)" ${dk > todayK ? 'opacity=".45"' : ""}><title>${shortDate(d)} : ${p} points</title></rect>`;
-        if (p) svg += `<rect x="${x}" y="${yy}" width="${cell}" height="${cell}" rx="3" fill="${col}" opacity="${p < 4 ? .35 : p < 7 ? .65 : 1}"><title>${shortDate(d)} : ${p} points</title></rect>`;
+        svg += `<rect x="${x}" y="${yy}" width="${cell}" height="${cell}" rx="3" fill="var(--line)" ${dk > todayK ? 'opacity=".45"' : ""}><title>${t("{date} : {n} points", { date: shortDate(d), n: p })}</title></rect>`;
+        if (p) svg += `<rect x="${x}" y="${yy}" width="${cell}" height="${cell}" rx="3" fill="${col}" opacity="${p < 4 ? .35 : p < 7 ? .65 : 1}"><title>${t("{date} : {n} points", { date: shortDate(d), n: p })}</title></rect>`;
         if (dk === todayK) svg += `<rect x="${x - 1}" y="${yy - 1}" width="${cell + 2}" height="${cell + 2}" rx="4" fill="none" stroke="var(--gold)" stroke-width="2"/>`;
       }
-      return `<div class="year-kid"><div class="year-name"><span style="color:${col}">${charOf(k).icon} ${esc(k.name)}</span><span>${yearTot} points en ${yr}</span></div>
+      return `<div class="year-kid"><div class="year-name"><span style="color:${col}">${charOf(k).icon} ${esc(k.name)}</span><span>${t("{n} points en {year}", { n: yearTot, year: yr })}</span></div>
         <div class="year-scroll">${svg}</svg></div>
         <div class="months">${MONTHS.map((m, i) => `<div class="month">${m}<b>${mt[i]}</b></div>`).join("")}</div></div>`;
-    }).join("") + `<p class="w-empty" style="font-size:13px">Chaque petit carré est un jour. Plus il est foncé, plus il y a eu de points ce jour-là.</p>` : emptyKids();
+    }).join("") + `<p class="w-empty" style="font-size:13px">${t("Chaque petit carré est un jour. Plus il est foncé, plus il y a eu de points ce jour-là.")}</p>` : emptyKids();
   }
 
   // ───── Administration ─────
-  const euro = n => { try { return n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" }); } catch { return n.toFixed(2) + " €"; } };
+  const euro = n => { try { return n.toLocaleString(L.locale, { style: "currency", currency: "EUR" }); } catch { return n.toFixed(2) + " €"; } };
   function renderReport() {
     const st = settings();
     $("#rate-info").textContent = st.maxWeek > 0
-      ? `Soit ${st.maxWeek} points au maximum par semaine et par enfant : 1 point vaut environ ${euro(st.euroPerPoint)}. Par jour : ${[st.routines.matin, st.routines.soir, ...st.tasks].map(m => `${m.label.toLowerCase()} ${m.points} pt${m.points > 1 ? "s" : ""}`).join(", ")}.`
-      : "Ajoute des missions pour calculer la valeur d'un point.";
+      ? t("Soit {max} points au maximum par semaine et par enfant : 1 point vaut environ {value}. Par jour : {list}.", { max: st.maxWeek, value: euro(st.euroPerPoint), list: [st.routines.matin, st.routines.soir, ...st.tasks].map(m => `${shown(m.label).toLowerCase()} ${m.points} pt${m.points > 1 ? "s" : ""}`).join(", ") })
+      : t("Ajoute des missions pour calculer la valeur d'un point.");
     const rate = st.euroPerPoint, mon = monday(Date.now()), end = addDays(mon, 7);
-    $("#rp-range").textContent = `Du ${shortDate(mon)} au ${shortDate(addDays(mon, 6))}`;
+    $("#rp-range").textContent = t("Du {from} au {to}", { from: shortDate(mon), to: shortDate(addDays(mon, 6)) });
     const rows = S.children.map(k => {
       const wk = S.events.filter(e => e.child_id === k.id && e.at >= mon && e.at < end);
       const won = wk.filter(e => e.points > 0).reduce((a, e) => a + e.points, 0), spent = -wk.filter(e => e.points < 0).reduce((a, e) => a + e.points, 0);
@@ -576,58 +576,58 @@
     });
     const sum = f => rows.reduce((a, r) => a + r[f], 0);
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
-    $("#report").innerHTML = `<thead><tr><th>Enfant</th><th>Gagnés</th><th>Objectif</th><th>Dépensés</th><th>Valeur gagnée</th><th>Solde</th><th>Valeur du solde</th></tr></thead>
-      <tbody>${rows.length ? rows.map(r => `<tr><td style="color:${charOf(r.k).color}">${charOf(r.k).icon} ${esc(r.k.name)}</td><td>${r.won} pts</td><td>${r.won >= r.goal ? '<span class="pill yes">atteint ✓</span>' : `${r.won} / ${r.goal}`}</td><td>${r.spent} pts</td><td>${euro(r.won * rate)}</td><td>${r.bal} pts</td><td>${euro(r.bal * rate)}</td></tr>`).join("") : `<tr><td colspan="7">Pas encore d'enfant.</td></tr>`}</tbody>
-      ${rows.length ? `<tfoot><tr><td>Total famille</td><td>${sum("won")} pts</td><td></td><td>${sum("spent")} pts</td><td>${euro(sum("won") * rate)}</td><td>${sum("bal")} pts</td><td>${euro(sum("bal") * rate)}</td></tr></tfoot>` : ""}`;
+    $("#report").innerHTML = `<thead><tr>${["Enfant", "Gagnés", "Objectif", "Dépensés", "Valeur gagnée", "Solde", "Valeur du solde"].map(h => `<th>${t(h)}</th>`).join("")}</tr></thead>
+      <tbody>${rows.length ? rows.map(r => `<tr><td style="color:${charOf(r.k).color}">${charOf(r.k).icon} ${esc(r.k.name)}</td><td>${r.won} pts</td><td>${r.won >= r.goal ? `<span class="pill yes">${t("atteint ✓")}</span>` : `${r.won} / ${r.goal}`}</td><td>${r.spent} pts</td><td>${euro(r.won * rate)}</td><td>${r.bal} pts</td><td>${euro(r.bal * rate)}</td></tr>`).join("") : `<tr><td colspan="7">${t("Pas encore d'enfant.")}</td></tr>`}</tbody>
+      ${rows.length ? `<tfoot><tr><td>${t("Total famille")}</td><td>${sum("won")} pts</td><td></td><td>${sum("spent")} pts</td><td>${euro(sum("won") * rate)}</td><td>${sum("bal")} pts</td><td>${euro(sum("bal") * rate)}</td></tr></tfoot>` : ""}`;
   }
   $("#rate-form").addEventListener("submit", async e => {
     e.preventDefault();
     const v = Number(String($("#rate").value).replace(",", "."));
-    if (!(v >= 0 && v <= 1000)) return toast("Mets une somme entre 0 et 1000 €.");
+    if (!(v >= 0 && v <= 1000)) return toast(t("Mets une somme entre 0 et 1000 €."));
     const next = Object.assign({}, S.family.settings || {}, { weeklyBudget: Math.round(v * 100) / 100 });
     delete next.euroPerPoint;
     const { error } = await sb.from("families").update({ settings: next }).eq("id", S.family.id);
     if (error) return toast(OOPS);
-    S.family.settings = next; render(); toast("Budget de la semaine enregistré ✓");
+    S.family.settings = next; render(); toast(t("Budget de la semaine enregistré ✓"));
   });
   function renderAdminLists() {
     renderReport();
     $("#invite-code").textContent = S.family.invite_code || "";
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#admin-kids").innerHTML = S.children.length ? S.children.map(k => { const c = charOf(k), delKey = "delkid|" + k.id;
-      return `<div class="akid" style="${kidStyle(k)}"><span class="avatar" aria-hidden="true">${c.icon}</span><div class="grow"><b>${esc(k.name)}</b><small>${esc(c.name)} · objectif ${k.weekly_goal} points par semaine</small></div>
-        <button class="btn ghost small" data-editkid="${k.id}">Modifier</button><button class="btn ghost small" data-delkid="${k.id}">${S.confirmKey === delKey ? "Sûr ? Ses points seront effacés" : "Supprimer"}</button></div>`; }).join("")
-      : `<p class="hint">Pas encore d'enfant. Ajoute le premier avec le formulaire ci-dessous.</p>`;
+      return `<div class="akid" style="${kidStyle(k)}"><span class="avatar" aria-hidden="true">${c.icon}</span><div class="grow"><b>${esc(k.name)}</b><small>${t("{char} · objectif {n} points par semaine", { char: esc(c.name), n: k.weekly_goal })}</small></div>
+        <button class="btn ghost small" data-editkid="${k.id}">${t("Modifier")}</button><button class="btn ghost small" data-delkid="${k.id}">${t(S.confirmKey === delKey ? "Sûr ? Ses points seront effacés" : "Supprimer")}</button></div>`; }).join("")
+      : `<p class="hint">${t("Pas encore d'enfant. Ajoute le premier avec le formulaire ci-dessous.")}</p>`;
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
-    $("#admin-rewards").innerHTML = S.rewards.length ? S.rewards.map(r => { const who = !r.child_ids || !r.child_ids.length ? "Pour tous" : "Pour " + r.child_ids.map(id => (kidById(id) || {}).name).filter(Boolean).map(esc).join(", "), key = "delrw|" + r.id;
-      return `<div class="akid"><span class="avatar" aria-hidden="true" style="border-color:var(--gold)">${esc(r.icon)}</span><div class="grow"><b style="color:var(--ink)">${esc(r.title)}</b><small>${r.cost} points · ${who}</small></div><button class="btn ghost small" data-delrw="${r.id}">${S.confirmKey === key ? "Sûr ? Enlever" : "Enlever"}</button></div>`; }).join("")
-      : `<p class="hint">Aucune récompense pour l'instant.</p>`;
+    $("#admin-rewards").innerHTML = S.rewards.length ? S.rewards.map(r => { const who = !r.child_ids || !r.child_ids.length ? t("Pour tous") : t("Pour {names}", { names: r.child_ids.map(id => (kidById(id) || {}).name).filter(Boolean).map(esc).join(", ") }), key = "delrw|" + r.id;
+      return `<div class="akid"><span class="avatar" aria-hidden="true" style="border-color:var(--gold)">${esc(r.icon)}</span><div class="grow"><b style="color:var(--ink)">${esc(shown(r.title))}</b><small>${t("{n} points · {who}", { n: r.cost, who })}</small></div><button class="btn ghost small" data-delrw="${r.id}">${t(S.confirmKey === key ? "Sûr ? Enlever" : "Enlever")}</button></div>`; }).join("")
+      : `<p class="hint">${t("Aucune récompense pour l'instant.")}</p>`;
     const forSel = $("#rw-for"), cur = forSel.value;
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
-    forSel.innerHTML = `<option value="">Tous les enfants</option>` + S.children.map(k => `<option value="${k.id}">${esc(k.name)}</option>`).join("");
+    forSel.innerHTML = `<option value="">${t("Tous les enfants")}</option>` + S.children.map(k => `<option value="${k.id}">${esc(k.name)}</option>`).join("");
     if ([...forSel.options].some(o => o.value === cur)) forSel.value = cur;
-    $("#reset-btn").textContent = S.resetArmed ? "Sûr ? Tous les points seront effacés" : "Tout remettre à zéro";
+    $("#reset-btn").textContent = t(S.resetArmed ? "Sûr ? Tous les points seront effacés" : "Tout remettre à zéro");
     $("#reset-btn").classList.toggle("confirm", S.resetArmed);
   }
   function fillAdminForms() {
     const st = settings();
     $("#fam-name").value = S.family.name;
     $("#rate").value = st.weeklyBudget;
-    ["matin", "soir"].forEach(p => { $("#m-" + p + "-pts").value = st.routines[p].weight; $("#m-" + p + "-items").value = (st.routines[p].items || []).join("\n"); });
+    ["matin", "soir"].forEach(p => { $("#m-" + p + "-pts").value = st.routines[p].weight; $("#m-" + p + "-items").value = (st.routines[p].items || []).map(shown).join("\n"); });
     $("#task-rows").innerHTML = ""; st.tasks.forEach(t => addTaskRow(t));
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#rw-icon").innerHTML = REWARD_ICONS.map(i => `<option value="${i}">${i}</option>`).join("");
     resetKidForm();
     S.adminFilled = true;
   }
-  function addTaskRow(t) {
-    t = t || { label: "", icon: "⭐", weight: 1 };
+  function addTaskRow(task) {
+    task = task || { label: "", icon: "⭐", weight: 1 };
     const row = document.createElement("div"); row.className = "task-row";
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
-    row.innerHTML = `<label>Image<select class="t-icon">${TASK_ICONS.concat(TASK_ICONS.includes(t.icon) ? [] : [t.icon]).map(i => `<option ${i === t.icon ? "selected" : ""}>${esc(i)}</option>`).join("")}</select></label>
-      <label>Nom<input class="t-label" type="text" maxlength="30" value="${esc(t.label)}" placeholder="Ex. : Mettre la table"></label>
-      <label>Poids (1 à 10)<input class="t-pts" type="number" min="1" max="10" value="${Number(t.weight) || 1}"></label>
-      <button class="btn ghost small" type="button" data-rmtask>Enlever</button>`;
+    row.innerHTML = `<label>${t("Image")}<select class="t-icon">${TASK_ICONS.concat(TASK_ICONS.includes(task.icon) ? [] : [task.icon]).map(i => `<option ${i === task.icon ? "selected" : ""}>${esc(i)}</option>`).join("")}</select></label>
+      <label>${t("Nom")}<input class="t-label" type="text" maxlength="30" value="${esc(shown(task.label))}" placeholder="${t("Ex. : Mettre la table")}"></label>
+      <label>${t("Poids (1 à 10)")}<input class="t-pts" type="number" min="1" max="10" value="${Number(task.weight) || 1}"></label>
+      <button class="btn ghost small" type="button" data-rmtask>${t("Enlever")}</button>`;
     $("#task-rows").appendChild(row);
   }
   $("#add-task").addEventListener("click", () => addTaskRow());
@@ -635,12 +635,12 @@
 
   function renderCharPicker() {
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
-    $("#char-picker").innerHTML = window.CHARACTERS.map(c => `<button type="button" class="char" style="--c:${c.color}" data-char="${c.id}" aria-pressed="${c.id === S.pickedChar}"><span class="ci" aria-hidden="true">${c.icon}</span><b>${esc(c.name)}</b><small>${esc(c.powerName)}</small></button>`).join("");
+    $("#char-picker").innerHTML = window.CHARACTERS.map(L.char).map(c => `<button type="button" class="char" style="--c:${c.color}" data-char="${c.id}" aria-pressed="${c.id === S.pickedChar}"><span class="ci" aria-hidden="true">${c.icon}</span><b>${esc(c.name)}</b><small>${esc(c.powerName)}</small></button>`).join("");
   }
   function resetKidForm() {
     S.editingKid = null; S.pickedChar = window.CHARACTERS[S.children.length % window.CHARACTERS.length].id;
     $("#kid-name").value = ""; $("#kid-goal").value = 25;
-    $("#kid-form-title").textContent = "Ajouter un enfant"; $("#kid-submit").textContent = "Ajouter l'enfant";
+    $("#kid-form-title").textContent = t("Ajouter un enfant"); $("#kid-submit").textContent = t("Ajouter l'enfant");
     show("#kid-cancel", false); msg("#kid-err"); renderCharPicker();
   }
   $("#char-picker").addEventListener("click", e => { const b = e.target.closest("[data-char]"); if (!b) return; S.pickedChar = b.dataset.char; renderCharPicker(); });
@@ -648,66 +648,66 @@
   $("#kid-form").addEventListener("submit", async e => {
     e.preventDefault(); msg("#kid-err");
     const name = $("#kid-name").value.trim(), goal = Math.round(Number($("#kid-goal").value));
-    if (!name) return msg("#kid-err", "Écris le prénom de l'enfant.");
-    if (!(goal >= 1 && goal <= 999)) return msg("#kid-err", "L'objectif doit être entre 1 et 999 points.");
+    if (!name) return msg("#kid-err", t("Écris le prénom de l'enfant."));
+    if (!(goal >= 1 && goal <= 999)) return msg("#kid-err", t("L'objectif doit être entre 1 et 999 points."));
     const row = { name: name.slice(0, 30), weekly_goal: goal, character: S.pickedChar };
     const { error } = S.editingKid
       ? await sb.from("children").update(row).eq("id", S.editingKid)
       : await sb.from("children").insert(Object.assign(row, { family_id: S.family.id, position: S.children.length }));
     if (error) return msg("#kid-err", OOPS);
-    toast(S.editingKid ? "Fiche modifiée ✓" : `${name} est dans la famille ! 🎉`);
+    toast(S.editingKid ? t("Fiche modifiée ✓") : t("{name} est dans la famille ! 🎉", { name }));
     await fetchChildren(); resetKidForm(); render();
   });
   $("#fam-form").addEventListener("submit", async e => {
     e.preventDefault();
-    const name = $("#fam-name").value.trim(); if (!name) return toast("Le nom ne peut pas être vide.");
+    const name = $("#fam-name").value.trim(); if (!name) return toast(t("Le nom ne peut pas être vide."));
     const { error } = await sb.from("families").update({ name: name.slice(0, 60) }).eq("id", S.family.id);
     if (error) return toast(OOPS);
     S.family.name = name; $("#title").textContent = name;
     const o = $(`#family-switch option[value="${S.family.id}"]`); if (o) o.textContent = name;
-    toast("Nom enregistré ✓");
+    toast(t("Nom enregistré ✓"));
   });
   $("#copy-code").addEventListener("click", async () => {
-    try { await navigator.clipboard.writeText(S.family.invite_code); toast("Code copié ✓"); }
-    catch { const r = document.createRange(); r.selectNodeContents($("#invite-code")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast("Code sélectionné : fais Copier."); }
+    try { await navigator.clipboard.writeText(S.family.invite_code); toast(t("Code copié ✓")); }
+    catch { const r = document.createRange(); r.selectNodeContents($("#invite-code")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast(t("Code sélectionné : fais Copier.")); }
   });
   $("#new-code").addEventListener("click", async () => {
     const { data, error } = await sb.rpc("new_invite_code", { fid: S.family.id });
     if (error) return toast(OOPS);
-    S.family.invite_code = data; renderAdminLists(); toast("Nouveau code créé. L'ancien ne marche plus.");
+    S.family.invite_code = data; renderAdminLists(); toast(t("Nouveau code créé. L'ancien ne marche plus."));
   });
   $("#missions-form").addEventListener("submit", async e => {
     e.preventDefault(); msg("#missions-err");
     const cur = settings(), routines = {};
     for (const p of ["matin", "soir"]) {
       const pts = Math.round(Number($("#m-" + p + "-pts").value));
-      const items = $("#m-" + p + "-items").value.split("\n").map(s => s.trim()).filter(Boolean).map(s => s.slice(0, 60)).slice(0, 15);
-      if (!(pts >= 1 && pts <= 10)) return msg("#missions-err", "Le poids doit être entre 1 et 10.");
-      if (!items.length) return msg("#missions-err", "Écris au moins une mission du " + p + ".");
+      const items = $("#m-" + p + "-items").value.split("\n").map(s => L.raw(s.trim())).filter(Boolean).map(s => s.slice(0, 60)).slice(0, 15);
+      if (!(pts >= 1 && pts <= 10)) return msg("#missions-err", t("Le poids doit être entre 1 et 10."));
+      if (!items.length) return msg("#missions-err", t(p === "matin" ? "Écris au moins une mission du matin." : "Écris au moins une mission du soir."));
       routines[p] = { label: cur.routines[p].label, icon: cur.routines[p].icon, weight: pts, items };
     }
     const tasks = [];
     for (const row of $$("#task-rows .task-row")) {
-      const label = row.querySelector(".t-label").value.trim().slice(0, 30), pts = Math.round(Number(row.querySelector(".t-pts").value));
+      const label = L.raw(row.querySelector(".t-label").value.trim()).slice(0, 30), pts = Math.round(Number(row.querySelector(".t-pts").value));
       if (!label) continue;
-      if (!(pts >= 1 && pts <= 10)) return msg("#missions-err", `Le poids de « ${label} » doit être entre 1 et 10.`);
+      if (!(pts >= 1 && pts <= 10)) return msg("#missions-err", t("Le poids de « {label} » doit être entre 1 et 10.", { label: shown(label) }));
       tasks.push({ label, icon: row.querySelector(".t-icon").value, weight: pts });
     }
     // Le budget de la semaine reste le même : la valeur d'un point s'ajuste aux nouvelles missions.
     const next = { routines, tasks, weeklyBudget: cur.weeklyBudget };
     const { error } = await sb.from("families").update({ settings: next }).eq("id", S.family.id);
     if (error) return msg("#missions-err", OOPS);
-    S.family.settings = next; render(); toast("Missions enregistrées ✓");
+    S.family.settings = next; render(); toast(t("Missions enregistrées ✓"));
   });
   $("#reward-form").addEventListener("submit", async e => {
     e.preventDefault(); msg("#rw-err");
     const title = $("#rw-title").value.trim(), cost = Math.round(Number($("#rw-cost").value)), forId = $("#rw-for").value;
-    if (!title) return msg("#rw-err", "Écris le nom de la récompense.");
-    if (!(cost >= 1 && cost <= 9999)) return msg("#rw-err", "Mets un nombre de points entre 1 et 9999.");
+    if (!title) return msg("#rw-err", t("Écris le nom de la récompense."));
+    if (!(cost >= 1 && cost <= 9999)) return msg("#rw-err", t("Mets un nombre de points entre 1 et 9999."));
     const { error } = await sb.from("rewards").insert({ family_id: S.family.id, title: title.slice(0, 40), cost, icon: $("#rw-icon").value, child_ids: forId ? [forId] : null });
     if (error) return msg("#rw-err", OOPS);
     $("#rw-title").value = ""; $("#rw-cost").value = "";
-    await fetchRewards(); render(); toast(`${title} est dans le catalogue ! 🎁`);
+    await fetchRewards(); render(); toast(t("{title} est dans le catalogue ! 🎁", { title }));
   });
   $("#reset-btn").addEventListener("click", async () => {
     if (!S.resetArmed) { S.resetArmed = true; setTimeout(() => { S.resetArmed = false; renderAdminLists(); }, 5000); return renderAdminLists(); }
@@ -716,7 +716,7 @@
       sb.from("events").delete().eq("family_id", S.family.id),
       sb.from("checks").delete().eq("family_id", S.family.id)
     ]);
-    if (a.error || b.error) toast(OOPS); else toast("Tous les points sont remis à zéro.");
+    if (a.error || b.error) toast(OOPS); else toast(t("Tous les points sont remis à zéro."));
     await Promise.all([fetchEvents(), fetchChecks()]); render();
   });
 
@@ -730,8 +730,8 @@
       if (!item) return;
       // Les missions du matin et du soir se gagnent en cochant les cases, sur la page des missions
       if (key.startsWith("r:")) { location.hash = "#a-faire"; return; }
-      if (doneToday(kid, item.label)) return toast("Déjà fait aujourd'hui ✓ Reviens demain !");
-      if (await addEvent(kid, item.points, item.label)) toast(`Bravo ${(kidById(kid) || {}).name} ! +${item.points} points`);
+      if (doneToday(kid, item.label)) return toast(t("Déjà fait aujourd'hui ✓ Reviens demain !"));
+      if (await addEvent(kid, item.points, item.label)) toast(t("Bravo {name} ! +{n} points", { name: (kidById(kid) || {}).name, n: item.points }));
     } else if (d.undo) {
       const last = S.events.filter(x => x.child_id === d.undo).sort((x, y) => y.at - x.at)[0];
       if (last) removeEvent(last.id);
@@ -741,8 +741,8 @@
       toggleCheck(d.check, d.item);
     } else if (d.bonus) {
       const [kid, part] = d.bonus.split("|"), r = settings().routines[part];
-      if (doneToday(kid, r.label)) return toast("Déjà fait aujourd'hui ✓ Reviens demain !");
-      if (await addEvent(kid, r.points, r.label)) toast(`Bravo ${(kidById(kid) || {}).name} ! +${r.points} points`);
+      if (doneToday(kid, r.label)) return toast(t("Déjà fait aujourd'hui ✓ Reviens demain !"));
+      if (await addEvent(kid, r.points, r.label)) toast(t("Bravo {name} ! +{n} points", { name: (kidById(kid) || {}).name, n: r.points }));
     } else if (d.unbonus) {
       const [kid, part] = d.unbonus.split("|"), r = settings().routines[part], key = "unbonus|" + kid + "|" + part;
       if (!r) return;
@@ -757,14 +757,14 @@
       S.confirmKey = null;
       const r = S.rewards.find(x => x.id === rid);
       if (!r || total(kid) < r.cost) return render();
-      if (await addEvent(kid, -r.cost, r.title)) toast(`Super ! ${r.title} pour ${(kidById(kid) || {}).name} 🎁`);
+      if (await addEvent(kid, -r.cost, r.title)) toast(t("Super ! {title} pour {name} 🎁", { title: shown(r.title), name: (kidById(kid) || {}).name }));
     } else if (d.year) {
       S.yearShown += Number(d.year); renderWeeks();
     } else if (d.editkid) {
       const k = kidById(d.editkid); if (!k) return;
       S.editingKid = k.id; S.pickedChar = k.character;
       $("#kid-name").value = k.name; $("#kid-goal").value = k.weekly_goal;
-      $("#kid-form-title").textContent = "Modifier " + k.name; $("#kid-submit").textContent = "Enregistrer";
+      $("#kid-form-title").textContent = t("Modifier {name}", { name: k.name }); $("#kid-submit").textContent = t("Enregistrer");
       show("#kid-cancel", true); renderCharPicker();
       $("#kid-form").scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "center" });
     } else if (d.delkid) {
@@ -773,14 +773,14 @@
       S.confirmKey = null;
       const { error } = await sb.from("children").delete().eq("id", d.delkid);
       if (error) return toast(OOPS);
-      await Promise.all([fetchChildren(), fetchEvents()]); render(); toast("Enfant supprimé");
+      await Promise.all([fetchChildren(), fetchEvents()]); render(); toast(t("Enfant supprimé"));
     } else if (d.delrw) {
       const key = "delrw|" + d.delrw;
       if (S.confirmKey !== key) return armConfirm(key);
       S.confirmKey = null;
       const { error } = await sb.from("rewards").delete().eq("id", d.delrw);
       if (error) return toast(OOPS);
-      await fetchRewards(); render(); toast("Récompense enlevée");
+      await fetchRewards(); render(); toast(t("Récompense enlevée"));
     }
   });
 
@@ -794,7 +794,8 @@
     if (v === "admin" && S.family && !S.adminFilled) fillAdminForms();
     if (v === "admin" && S.family) sb.from("family_members").select("user_id, role", { count: "exact" }).eq("family_id", S.family.id).then(({ data }) => {
       if (!data) return; const n = data.length, a = data.filter(m => m.role === "admin").length;
-      $("#members").textContent = `${n} adulte${n > 1 ? "s" : ""} dans la famille, dont ${a} administrateur${a > 1 ? "s" : ""}.`;
+      $("#members").textContent = t(n === 1 ? "1 adulte dans la famille" : "{n} adultes dans la famille", { n })
+        + t(a === 1 ? ", dont 1 administrateur." : a === 0 ? ", dont 0 administrateur." : ", dont {n} administrateurs.", { n: a });
     });
   }
   window.addEventListener("hashchange", showView);
