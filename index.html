@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- [html-validate-disable-next require-sri -- la feuille Google Fonts change selon le navigateur : pas d'empreinte possible] -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@500;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=2026-11-22b">
+<link rel="stylesheet" href="style.css?v=2026-11-22c">
 </head>
 <body>
 <div class="wrap">
@@ -185,16 +185,17 @@
 
       <div class="card">
         <h2 class="sec">Les missions</h2>
+        <p class="hint">Tu ne choisis pas les points : donne à chaque mission un poids de 1 à 10 (plus il est grand, plus la mission rapporte). Le site répartit environ 100 points par semaine et par enfant selon ces poids, puis calcule la valeur d'un point avec le budget de la semaine (voir le rapport plus haut).</p>
         <form id="missions-form" class="form" novalidate>
           <div class="grid2">
             <div class="routine">
               <h3>🌅 Missions du matin</h3>
-              <label>Points quand tout est fait<input id="m-matin-pts" type="number" min="1" max="99" required></label>
+              <label>Poids (1 à 10)<input id="m-matin-pts" type="number" min="1" max="10" required></label>
               <label>Une mission par ligne<textarea id="m-matin-items" rows="6"></textarea></label>
             </div>
             <div class="routine">
               <h3>🌙 Missions du soir</h3>
-              <label>Points quand tout est fait<input id="m-soir-pts" type="number" min="1" max="99" required></label>
+              <label>Poids (1 à 10)<input id="m-soir-pts" type="number" min="1" max="10" required></label>
               <label>Une mission par ligne<textarea id="m-soir-items" rows="6"></textarea></label>
             </div>
           </div>
@@ -233,8 +234,8 @@
 <div class="toast" id="toast" hidden></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
-<script src="config.js?v=2026-11-22b"></script>
-<script src="characters.js?v=2026-11-22b"></script>
-<script src="app.js?v=2026-11-22b"></script>
+<script src="config.js?v=2026-11-22c"></script>
+<script src="characters.js?v=2026-11-22c"></script>
+<script src="app.js?v=2026-11-22c"></script>
 </body>
 </html>

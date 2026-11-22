@@ -50,10 +50,13 @@
   };
   // Les réglages viennent de la base (jsonb libre) : on force les types pour qu'aucune
   // valeur inattendue n'arrive dans le HTML (nombres pour les points, texte pour le reste).
-  const pts = (v, d) => { const n = Math.round(Number(v)); return n >= 1 && n <= 99 ? n : d; };
+  // Poids d'une mission, de 1 à 10. Les anciennes familles avaient des points : ils servent de poids.
+  const wgt = (o, d) => { const n = Math.round(Number(o && (o.weight !== undefined ? o.weight : o.points))); return n >= 1 ? Math.min(n, 10) : d; };
+  // Chaque enfant peut gagner environ 100 points par semaine en faisant toutes ses missions.
+  const POINTS_PER_WEEK = 100;
   const txt = (v, d) => (typeof v === "string" && v.trim() ? v.slice(0, 80) : d);
   const routine = (r, d) => ({
-    label: txt(r && r.label, d.label), icon: txt(r && r.icon, d.icon), points: pts(r && r.points, d.points),
+    label: txt(r && r.label, d.label), icon: txt(r && r.icon, d.icon), weight: wgt(r, d.points),
     items: Array.isArray(r && r.items) ? r.items.filter(i => typeof i === "string").map(i => i.slice(0, 80)) : d.items
   });
   const settings = () => {
@@ -61,13 +64,17 @@
     const r = s.routines || {}, D = DEFAULT_SETTINGS;
     const routines = { matin: routine(r.matin, D.routines.matin), soir: routine(r.soir, D.routines.soir) };
     const tasks = (Array.isArray(s.tasks) ? s.tasks : D.tasks).filter(t => t && typeof t === "object")
-      .map(t => ({ label: txt(t.label, "?"), icon: txt(t.icon, "⭐"), points: pts(t.points, 1) }));
-    // Chaque mission rapporte des points une fois par jour : le maximum d'une semaine, c'est 7 jours de toutes les missions.
-    const maxWeek = 7 * (routines.matin.points + routines.soir.points + tasks.reduce((a, t) => a + t.points, 0));
+      .map(t => ({ label: txt(t.label, "?"), icon: txt(t.icon, "⭐"), weight: wgt(t, 1) }));
+    // Les parents donnent un poids à chaque mission ; le site répartit les 100 points de la semaine selon ces poids.
+    // Chaque mission se fait une fois par jour, donc 7 fois par semaine. Les points restent entiers (au moins 1).
+    const all = [routines.matin, routines.soir, ...tasks], sumW = all.reduce((a, m) => a + m.weight, 0);
+    all.forEach(m => { m.points = Math.max(1, Math.round(POINTS_PER_WEEK / 7 * m.weight / sumW)); });
+    const maxWeek = 7 * all.reduce((a, m) => a + m.points, 0);
+    const oldMax = 7 * sumW; // ancien calcul, quand le poids était le nombre de points
     const okNum = (v, max) => typeof v === "number" && v >= 0 && v <= max;
     // Ancien réglage (valeur d'un point) : on le convertit en budget pour ne rien changer aux familles existantes.
     const weeklyBudget = okNum(s.weeklyBudget, 1000) ? s.weeklyBudget
-      : okNum(s.euroPerPoint, 100) ? Math.round(s.euroPerPoint * maxWeek * 100) / 100 : DEFAULT_WEEKLY_BUDGET;
+      : okNum(s.euroPerPoint, 100) ? Math.round(s.euroPerPoint * oldMax * 100) / 100 : DEFAULT_WEEKLY_BUDGET;
     return { routines, tasks, maxWeek, weeklyBudget, euroPerPoint: maxWeek > 0 ? weeklyBudget / maxWeek : 0 };
   };
   const isAdmin = () => S.role === "admin";
@@ -551,7 +558,7 @@
   function renderReport() {
     const st = settings();
     $("#rate-info").textContent = st.maxWeek > 0
-      ? `Soit ${st.maxWeek} points au maximum par semaine et par enfant : 1 point vaut environ ${euro(st.euroPerPoint)}.`
+      ? `Soit ${st.maxWeek} points au maximum par semaine et par enfant : 1 point vaut environ ${euro(st.euroPerPoint)}. Par jour : ${[st.routines.matin, st.routines.soir, ...st.tasks].map(m => `${m.label.toLowerCase()} ${m.points} pt${m.points > 1 ? "s" : ""}`).join(", ")}.`
       : "Ajoute des missions pour calculer la valeur d'un point.";
     const rate = st.euroPerPoint, mon = monday(Date.now()), end = addDays(mon, 7);
     $("#rp-range").textContent = `Du ${shortDate(mon)} au ${shortDate(addDays(mon, 6))}`;
@@ -599,7 +606,7 @@
     const st = settings();
     $("#fam-name").value = S.family.name;
     $("#rate").value = st.weeklyBudget;
-    ["matin", "soir"].forEach(p => { $("#m-" + p + "-pts").value = st.routines[p].points; $("#m-" + p + "-items").value = (st.routines[p].items || []).join("\n"); });
+    ["matin", "soir"].forEach(p => { $("#m-" + p + "-pts").value = st.routines[p].weight; $("#m-" + p + "-items").value = (st.routines[p].items || []).join("\n"); });
     $("#task-rows").innerHTML = ""; st.tasks.forEach(t => addTaskRow(t));
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#rw-icon").innerHTML = REWARD_ICONS.map(i => `<option value="${i}">${i}</option>`).join("");
@@ -607,12 +614,12 @@
     S.adminFilled = true;
   }
   function addTaskRow(t) {
-    t = t || { label: "", icon: "⭐", points: 1 };
+    t = t || { label: "", icon: "⭐", weight: 1 };
     const row = document.createElement("div"); row.className = "task-row";
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     row.innerHTML = `<label>Image<select class="t-icon">${TASK_ICONS.concat(TASK_ICONS.includes(t.icon) ? [] : [t.icon]).map(i => `<option ${i === t.icon ? "selected" : ""}>${esc(i)}</option>`).join("")}</select></label>
       <label>Nom<input class="t-label" type="text" maxlength="30" value="${esc(t.label)}" placeholder="Ex. : Mettre la table"></label>
-      <label>Points<input class="t-pts" type="number" min="1" max="99" value="${Number(t.points) || 1}"></label>
+      <label>Poids (1 à 10)<input class="t-pts" type="number" min="1" max="10" value="${Number(t.weight) || 1}"></label>
       <button class="btn ghost small" type="button" data-rmtask>Enlever</button>`;
     $("#task-rows").appendChild(row);
   }
@@ -668,16 +675,16 @@
     for (const p of ["matin", "soir"]) {
       const pts = Math.round(Number($("#m-" + p + "-pts").value));
       const items = $("#m-" + p + "-items").value.split("\n").map(s => s.trim()).filter(Boolean).map(s => s.slice(0, 60)).slice(0, 15);
-      if (!(pts >= 1 && pts <= 99)) return msg("#missions-err", "Les points doivent être entre 1 et 99.");
+      if (!(pts >= 1 && pts <= 10)) return msg("#missions-err", "Le poids doit être entre 1 et 10.");
       if (!items.length) return msg("#missions-err", "Écris au moins une mission du " + p + ".");
-      routines[p] = Object.assign({}, cur.routines[p], { points: pts, items });
+      routines[p] = { label: cur.routines[p].label, icon: cur.routines[p].icon, weight: pts, items };
     }
     const tasks = [];
     for (const row of $$("#task-rows .task-row")) {
       const label = row.querySelector(".t-label").value.trim().slice(0, 30), pts = Math.round(Number(row.querySelector(".t-pts").value));
       if (!label) continue;
-      if (!(pts >= 1 && pts <= 99)) return msg("#missions-err", `Les points de « ${label} » doivent être entre 1 et 99.`);
-      tasks.push({ label, icon: row.querySelector(".t-icon").value, points: pts });
+      if (!(pts >= 1 && pts <= 10)) return msg("#missions-err", `Le poids de « ${label} » doit être entre 1 et 10.`);
+      tasks.push({ label, icon: row.querySelector(".t-icon").value, weight: pts });
     }
     // Le budget de la semaine reste le même : la valeur d'un point s'ajuste aux nouvelles missions.
     const next = { routines, tasks, weeklyBudget: cur.weeklyBudget };
