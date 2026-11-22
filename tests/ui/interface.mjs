@@ -105,10 +105,20 @@ verifier(await q.isVisible("#don-card"), "avec un lien Ko-fi, le bouton « Soute
 verifier(await q.getAttribute("#don-link", "href") === "https://ko-fi.com/essai_1", "le bouton mène à la page Ko-fi");
 verifier(await q.getAttribute("#don-link", "rel") === "noopener noreferrer" && await q.getAttribute("#don-link", "target") === "_blank", "la page Ko-fi s'ouvre à part, sans accès au site");
 await q.evaluate(() => (location.hash = "#points")); await q.waitForTimeout(250);
-verifier(await q.isHidden("#don-card"), "le bouton de don n'est pas sur la page des enfants");
+verifier(await q.isHidden("#don-card"), "la carte de don de l'administration n'est pas sur « Mes points »");
+verifier(await q.isVisible("#don-pill") && await q.getAttribute("#don-pill", "href") === "https://ko-fi.com/essai_1", "« Soutenir Basile » est en haut de « Mes points » et mène à Ko-fi");
+const boite = await q.locator("#don-pill").boundingBox();
+verifier(boite && boite.x + boite.width > 900, "« Soutenir Basile » est à droite");
+await q.setViewportSize({ width: 1000, height: 500 });
+// La famille d'essai n'a pas d'enfant : on allonge la page pour pouvoir la faire défiler.
+await q.evaluate(() => { document.querySelector("#kids").style.minHeight = "2000px"; window.scrollTo(0, 1500); }); await q.waitForTimeout(300);
+const apres = await q.evaluate(() => ({ y: document.querySelector("#don-pill").getBoundingClientRect().y, defile: window.scrollY }));
+verifier(apres.defile > 0 && apres.y >= 0 && apres.y < 60, "« Soutenir Basile » reste visible quand on descend dans la page");
+await q.evaluate(() => (location.hash = "#catalogue")); await q.waitForTimeout(250);
+verifier(await q.isHidden("#don-pill"), "« Soutenir Basile » n'est que sur « Mes points »");
 await q.close();
 q = await pageDon("");
-verifier(await q.isHidden("#don-card"), "sans lien Ko-fi dans config.js, pas de bouton de don");
+verifier(await q.isHidden("#don-card") && await q.isHidden("#don-pill"), "sans lien Ko-fi dans config.js, pas de bouton de don");
 await q.close();
 for (const mauvais of ["javascript:alert(1)", "https://ko-fi.com.exemple.test/x", "http://ko-fi.com/x"]) {
   q = await pageDon(mauvais);
@@ -134,6 +144,7 @@ await e.click("#missions-form > .btn"); await e.waitForTimeout(300);
 verifier(await e.evaluate(() => window.__db.families.at(-1).settings.routines.matin.items[0]) === "M'habiller", "enregistrées depuis l'anglais, les missions de départ restent les mêmes dans la base");
 await e.evaluate(() => (location.hash = "#points")); await e.waitForTimeout(250);
 verifier((await e.textContent(".kid")).includes("Tidy bedroom") && (await e.textContent(".tabs")).includes("ON THE HUNT FOR POINTS"), "page des points en anglais");
+verifier((await e.textContent("#don-pill")).trim() === "💛 Support Basile", "« Soutenir Basile » est traduit en anglais");
 await e.click('[data-earn$="|t:0"]'); await e.waitForTimeout(300);
 verifier((await e.textContent(".kid .total b")).trim() === "3" && await e.isDisabled('[data-earn$="|t:0"]'), "en anglais, les points se gagnent pareil, une fois par jour");
 await e.evaluate(() => (location.hash = "#catalogue")); await e.waitForTimeout(250);

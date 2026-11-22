@@ -100,6 +100,7 @@
     "Image": "Picture",
     "➕ Ajouter au catalogue": "➕ Add to the shop",
     "💛 Soutenir le site": "💛 Support the site",
+    "💛 Soutenir Basile": "💛 Support Basile",
     "Le site est gratuit et sans publicité. Si tu veux aider à le faire vivre, tu peux faire un petit don. Ce n'est pas obligatoire.":
       "The site is free and has no ads. If you'd like to help keep it going, you can make a small donation. It's completely optional.",
     "💛 Faire un don sur Ko-fi": "💛 Donate on Ko-fi",

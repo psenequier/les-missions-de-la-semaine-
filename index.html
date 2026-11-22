@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- [html-validate-disable-next require-sri -- la feuille Google Fonts change selon le navigateur : pas d'empreinte possible] -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@500;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=2026-11-22e">
+<link rel="stylesheet" href="style.css?v=2026-11-22f">
 </head>
 <body>
 <div class="wrap">
@@ -112,6 +112,7 @@
     </nav>
 
     <section class="view" data-view="points">
+      <a class="btn don-pill" id="don-pill" href="#points" target="_blank" rel="noopener noreferrer" hidden>💛 Soutenir Basile</a>
       <div class="kids" id="kids"></div>
       <div class="rules" id="rules"></div>
     </section>
@@ -150,6 +151,12 @@
         </div>
         <p class="hint">Le mode salon garde l'écran allumé, pour une tablette posée dans le salon. Il revient tout seul sur « Mes points » après 3 minutes sans toucher l'écran.</p>
       </div>
+      <div class="card don" id="don-card" hidden>
+        <h2 class="sec">💛 Soutenir le site</h2>
+        <p class="hint">Le site est gratuit et sans publicité. Si tu veux aider à le faire vivre, tu peux faire un petit don. Ce n'est pas obligatoire.</p>
+        <a class="btn ghost" id="don-link" href="#admin" target="_blank" rel="noopener noreferrer">💛 Faire un don sur Ko-fi</a>
+      </div>
+
       <div class="card">
         <h2 class="sec">Rapport de la semaine</h2>
         <p class="hint" id="rp-range"></p>
@@ -229,12 +236,6 @@
         </form>
       </div>
 
-      <div class="card don" id="don-card" hidden>
-        <h2 class="sec">💛 Soutenir le site</h2>
-        <p class="hint">Le site est gratuit et sans publicité. Si tu veux aider à le faire vivre, tu peux faire un petit don. Ce n'est pas obligatoire.</p>
-        <a class="btn ghost" id="don-link" href="#admin" target="_blank" rel="noopener noreferrer">💛 Faire un don sur Ko-fi</a>
-      </div>
-
       <div class="card danger">
         <h2 class="sec">Remettre les points à zéro</h2>
         <p class="hint">Efface tous les points et tous les achats de la famille. Les enfants, missions et récompenses restent.</p>
@@ -246,9 +247,9 @@
 <div class="toast" id="toast" hidden></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
-<script src="i18n.js?v=2026-11-22e"></script>
-<script src="config.js?v=2026-11-22e"></script>
-<script src="characters.js?v=2026-11-22e"></script>
-<script src="app.js?v=2026-11-22e"></script>
+<script src="i18n.js?v=2026-11-22f"></script>
+<script src="config.js?v=2026-11-22f"></script>
+<script src="characters.js?v=2026-11-22f"></script>
+<script src="app.js?v=2026-11-22f"></script>
 </body>
 </html>

@@ -40,12 +40,12 @@
     return;
   }
   const sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey);
-  // Bouton de don (facultatif, pour les parents administrateurs) : un simple lien vers une page Ko-fi,
+  // Bouton de don (facultatif, dans l'administration et en haut à droite de « Mes points ») : un simple lien vers une page Ko-fi,
   // sans script extérieur. Toute autre adresse est ignorée et le bouton reste caché.
   const kofi = typeof CFG.kofi === "string" ? CFG.kofi.trim() : "";
   if (/^https:\/\/ko-fi\.com\/[A-Za-z0-9_]{1,64}\/?$/.test(kofi)) {
-    $("#don-link").href = kofi;
-    show("#don-card", true);
+    $("#don-link").href = kofi; $("#don-pill").href = kofi;
+    show("#don-card", true); show("#don-pill", true);
   }
 
   // ───────── État ─────────
