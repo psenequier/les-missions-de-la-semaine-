@@ -5,6 +5,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { chromium } from "playwright";
+import { suivre, ecrire } from "./couverture.mjs";
 
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css" };
 const racine = process.cwd();
@@ -28,6 +29,7 @@ const verifier = (ok, quoi) => { console.log(`${ok ? "OK" : "ÉCHEC"} : ${quoi}`
 const navigateur = await chromium.launch();
 // Appareil réglé en français : le site s'affiche en français (la version anglaise est testée plus bas).
 const p = await navigateur.newPage({ viewport: { width: 1000, height: 1300 }, locale: "fr-FR" });
+const finP = await suivre(p);
 const erreurs = [];
 p.on("pageerror", e => erreurs.push(e.message));
 p.on("console", m => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) erreurs.push(m.text()); });
@@ -125,6 +127,7 @@ verifier(await p.isVisible("#don-card"), "le lien Ko-fi de config.js affiche le 
 // Bouton de don : on change le lien Ko-fi de config.js pour cette page seulement.
 async function pageDon(lien) {
   const q = await navigateur.newPage({ viewport: { width: 1000, height: 1300 }, locale: "fr-FR" });
+  await suivre(q);
   await q.route(u => ["fonts.googleapis.com", "fonts.gstatic.com"].includes(u.hostname), r => r.abort());
   await q.route(u => u.origin === new URL(U).origin && u.pathname === "/config.js", async r => {
     const corps = await readFile(join(racine, "config.js"), "utf8");
@@ -178,6 +181,7 @@ for (const mauvais of ["javascript:alert(1)", "https://ko-fi.com.exemple.test/x"
 verifier(await p.evaluate(() => document.documentElement.lang) === "fr" && await p.getAttribute('[data-lang="fr"]', "aria-pressed") === "true", "appareil en français : site en français, drapeau 🇫🇷 choisi");
 const ctxEn = await navigateur.newContext({ viewport: { width: 1000, height: 1300 }, locale: "en-US" });
 const e = await ctxEn.newPage();
+const finE = await suivre(e);
 e.on("pageerror", x => erreurs.push(x.message));
 await e.route(u => ["fonts.googleapis.com", "fonts.gstatic.com"].includes(u.hostname), r => r.abort());
 await e.goto(U); await e.waitForTimeout(300);
@@ -211,7 +215,7 @@ await e.click('[data-lang="fr"]'); await e.waitForTimeout(600);
 verifier(await e.evaluate(() => document.documentElement.lang) === "fr" && (await e.textContent("#tab-admin")).includes("Administration"), "le drapeau 🇫🇷 remet le site en français");
 await e.reload(); await e.waitForTimeout(600);
 verifier(await e.evaluate(() => document.documentElement.lang) === "fr" && await e.evaluate(() => localStorage.getItem("points-lang")) === "fr", "le choix de la langue reste sur l'appareil, même si l'appareil est en anglais");
-await ctxEn.close();
+await finE(); await ctxEn.close();
 
 verifier(await p.evaluate(() => window.__xss) === undefined, "aucun texte piégé n'a exécuté de code");
 verifier(await p.locator("img").count() === 0, "aucune balise injectée dans la page");
@@ -220,5 +224,7 @@ verifier(await p.evaluate(() => !document.querySelector("[data-style]")), "tous 
 verifier(await p.evaluate(() => document.querySelectorAll(".kid").length > 0 && [...document.querySelectorAll(".kid")].every(k => k.style.getPropertyValue("--c"))), "chaque carte d'enfant a la couleur de son personnage");
 verifier(erreurs.length === 0, "aucune erreur JavaScript" + (erreurs.length ? " : " + erreurs.join(" | ") : ""));
 
+await finP();
+for (const ligne of await ecrire()) console.log(`Couverture : ${ligne}`);
 await navigateur.close(); serveur.close();
 if (echecs.length) { console.log(`::error title=Interface::${echecs.join(" ; ")}`); process.exit(1); }

@@ -4,3 +4,4 @@ node_modules/
 semgrep.json
 gitleaks.json
 codeql-resultats/
+coverage/
