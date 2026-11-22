@@ -243,7 +243,7 @@ button,.tab,.check,.btn-earn,.btn-buy{touch-action:manipulation;-webkit-tap-high
 
 @media (max-width:700px){
   .wrap{gap:14px;padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))}
-  .tagline,#who-email{display:none}
+  .tagline{display:none}
   .head{align-items:center}
   .who{gap:6px}
   /* Les onglets deviennent une barre en bas de l'écran, sous le pouce */
@@ -264,8 +264,9 @@ button,.tab,.check,.btn-earn,.btn-buy{touch-action:manipulation;-webkit-tap-high
 }
 
 /* ───────── Mode salon : tablette posée, écran toujours allumé ───────── */
-body.salon .tagline,body.salon #who-email{display:none}
+body.salon .tagline{display:none}
 body.salon #salon-btn{border-color:var(--gold);background:var(--gold);color:#2b2340}
 @media (min-width:701px){
   body.salon .btn-earn,body.salon .check{min-height:64px}
 }
+.account-row{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0}

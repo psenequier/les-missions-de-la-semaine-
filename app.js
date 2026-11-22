@@ -80,7 +80,10 @@
   function screen(name) {
     ["auth", "recover", "onboard", "app", "super"].forEach(n => show("#" + n, n === name));
     show("#who", !!S.user && name !== "auth");
+    S.screen = name; showTopLogout();
   }
+  // Les boutons du compte sont dans l'onglet Administration ; sans cet onglet, on garde « Se déconnecter » en haut.
+  function showTopLogout() { show("#logout-top", !!S.user && S.screen !== "auth" && !(S.screen === "app" && S.family && isAdmin())); }
 
   // ───────── Comptes ─────────
   let authMode = "login";
@@ -133,6 +136,7 @@
     const { data } = await sb.auth.getSession(); handleSession(data.session, true);
   });
   $("#logout").addEventListener("click", async () => { await sb.auth.signOut(); });
+  $("#logout-top").addEventListener("click", async () => { await sb.auth.signOut(); });
 
   sb.auth.onAuthStateChange((event, session) => {
     if (event === "PASSWORD_RECOVERY") { S.recovering = true; S.user = session && session.user; screen("recover"); return; }
@@ -374,7 +378,7 @@
   function render() {
     if (!S.family) return;
     if (S.checksDay && S.checksDay !== dayKey()) reload("checks");
-    show("#tab-admin", isAdmin());
+    show("#tab-admin", isAdmin()); showTopLogout();
     renderPoints(); renderTodo(); renderShop(); renderWeeks();
     if (isAdmin()) renderAdminLists();
   }

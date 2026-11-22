@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- [html-validate-disable-next require-sri -- la feuille Google Fonts change selon le navigateur : pas d'empreinte possible] -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@500;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=2026-11-21b">
+<link rel="stylesheet" href="style.css?v=2026-11-22a">
 </head>
 <body>
 <div class="wrap">
@@ -27,11 +27,9 @@
       <p class="tagline" id="tagline">Gagne des points, regarde ta barre monter, et choisis ta récompense !</p>
     </div>
     <div class="who" id="who" hidden>
-      <span id="who-email"></span>
       <select id="family-switch" aria-label="Changer de famille" hidden></select>
-      <button type="button" class="btn ghost small" id="salon-btn" aria-pressed="false" title="Garde l'écran allumé, pour une tablette posée dans le salon">📺 Mode salon</button>
-    <button type="button" class="btn ghost small" id="super-btn" hidden>🛡️ Super admin</button>
-    <button type="button" class="btn ghost small" id="logout">Se déconnecter</button>
+      <!-- Pour les parents sans onglet Administration (et avant d'avoir une famille) -->
+      <button type="button" class="btn ghost small" id="logout-top" hidden>Se déconnecter</button>
     </div>
   </header>
 
@@ -137,6 +135,16 @@
 
     <section class="view admin" data-view="admin" hidden>
       <div class="card">
+        <h2 class="sec">Mon compte et cet écran</h2>
+        <p class="hint">Connecté avec <b id="who-email"></b></p>
+        <div class="account-row">
+          <button type="button" class="btn ghost" id="salon-btn" aria-pressed="false">📺 Mode salon</button>
+          <button type="button" class="btn ghost" id="super-btn" hidden>🛡️ Super admin</button>
+          <button type="button" class="btn ghost" id="logout">Se déconnecter</button>
+        </div>
+        <p class="hint">Le mode salon garde l'écran allumé, pour une tablette posée dans le salon. Il revient tout seul sur « Mes points » après 3 minutes sans toucher l'écran.</p>
+      </div>
+      <div class="card">
         <h2 class="sec">Rapport de la semaine</h2>
         <p class="hint" id="rp-range"></p>
         <div class="report-wrap"><table class="report" id="report"></table></div>
@@ -225,8 +233,8 @@
 <div class="toast" id="toast" hidden></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
-<script src="config.js?v=2026-11-21b"></script>
-<script src="characters.js?v=2026-11-21b"></script>
-<script src="app.js?v=2026-11-21b"></script>
+<script src="config.js?v=2026-11-22a"></script>
+<script src="characters.js?v=2026-11-22a"></script>
+<script src="app.js?v=2026-11-22a"></script>
 </body>
 </html>
