@@ -69,7 +69,7 @@ Un bouton « 💛 Soutenir le site » apparaît alors dans l'onglet Administrati
 | `i18n.js` | les langues : textes en anglais, choix de la langue, drapeaux |
 | `config.js` | l'adresse et la clé publique Supabase, et le lien Ko-fi (facultatif) |
 | `supabase/schema.sql` | tables et règles de séparation des familles |
-| `supabase/catalogue-depart.sql` | catalogue de départ des nouvelles familles, pour une base déjà créée |
+| `supabase/catalogue-depart.sql` | catalogue de départ des nouvelles familles (copie des récompenses de la famille du super admin), pour une base déjà créée |
 | `supabase/une-fois-par-jour.sql` | chaque mission ne rapporte des points qu'une fois par jour, pour une base déjà créée |
 | `supabase/semaines-terminees.sql` | les points et l'objectif des semaines terminées ne changent plus, pour une base déjà créée |
 | `supabase/droits.sql` | ajoute les droits d'accès aux tables à une base déjà créée |

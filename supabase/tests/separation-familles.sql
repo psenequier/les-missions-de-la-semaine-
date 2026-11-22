@@ -152,6 +152,24 @@ set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
 delete from children where id = :'ks';
 select test.egal((select count(*) from events where id = :'ev_vieux'), 0, 'supprimer un enfant efface aussi ses semaines terminées');
 
+-- Catalogue de départ : copie des récompenses de la famille du super admin
+set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';
+select public.create_family('Famille du super admin') as fm \gset
+select test.egal((select count(*) from rewards where family_id = :'fm'), 3, 'sans famille modèle, le catalogue fixe est donné');
+delete from rewards where family_id = :'fm';
+insert into children (family_id, name) values (:'fm', 'Enfant modèle') returning id as km \gset
+insert into rewards (family_id, title, icon, cost, child_ids) values
+  (:'fm', 'Une glace', '🍦', 30, null),
+  (:'fm', 'Un jeu',    '🎮', 200, array[:'km']::uuid[]);
+reset role;
+insert into auth.users values ('55555555-5555-5555-5555-555555555555', 'nouveau@exemple.test');
+set role authenticated; set request.jwt.claim.sub = '55555555-5555-5555-5555-555555555555';
+select public.create_family('Famille nouvelle') as fn \gset
+select test.egal((select count(*) from rewards where family_id = :'fn'), 2, 'une nouvelle famille reçoit les récompenses de la famille du super admin');
+select test.egal((select count(*) from rewards where family_id = :'fn' and title in ('Une glace', 'Un jeu') and child_ids is null), 2, 'les récompenses copiées sont pour tous les enfants');
+select test.egal((select count(*) from rewards where family_id = :'fm'), 0, 'la nouvelle famille ne voit pas la famille modèle');
+select test.egal((select count(*) from children where family_id = :'fm'), 0, 'la nouvelle famille ne voit pas les enfants de la famille modèle');
+
 reset role;
 \o
 \echo 'Tous les tests de séparation des familles sont passés.'
