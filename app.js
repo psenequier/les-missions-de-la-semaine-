@@ -9,6 +9,14 @@
   const $$ = s => Array.from(document.querySelectorAll(s));
   const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const show = (el, on) => { if (typeof el === "string") el = $(el); if (el) el.hidden = !on; };
+  // La CSP refuse les attributs style écrits dans le HTML. Les cartes notent donc leur style (couleur du personnage…)
+  // dans data-style, et on l'applique ici par JavaScript dès qu'elles arrivent dans la page, avant l'affichage.
+  const applyStyles = root => {
+    const els = root.matches("[data-style]") ? [root, ...root.querySelectorAll("[data-style]")] : root.querySelectorAll("[data-style]");
+    els.forEach(el => { el.style.cssText = el.dataset.style; el.removeAttribute("data-style"); });
+  };
+  new MutationObserver(list => list.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) applyStyles(n); })))
+    .observe(document.documentElement, { childList: true, subtree: true });
   const msg = (sel, text) => { const el = $(sel); if (!el) return; el.textContent = text || ""; el.hidden = !text; };
   function toast(text) { const t = $("#toast"); t.textContent = text; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => (t.hidden = true), 2600); }
   const pad = n => String(n).padStart(2, "0");
@@ -445,16 +453,16 @@
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#kids").innerHTML = S.children.length ? S.children.map(k => {
       const hist = S.events.filter(e => e.child_id === k.id).sort((a, b) => b.at - a.at).slice(0, 5), locked = hist.length && weekClosed(hist[0].at);
-      return `<article class="kid" style="${kidStyle(k)}">
+      return `<article class="kid" data-style="${kidStyle(k)}">
         ${kidHead(k, `<div class="total"><b>${total(k.id)}</b><span>${t("points")}</span></div>`)}
-        <div><h3>${t("Gagner des points")}</h3><div class="earn" style="margin-top:8px">
+        <div><h3>${t("Gagner des points")}</h3><div class="earn" data-style="margin-top:8px">
           ${buttons.map(b => {
             const fait = doneToday(k.id, b.label), routine = b.key.startsWith("r:");
             const bas = fait ? t("✓ fait aujourd'hui") : routine ? t("Cocher mes missions →") : "+" + b.pts;
             return `<button class="btn-earn ${fait ? "fait" : ""} ${routine && !fait ? "aller" : ""}" data-earn="${k.id}|${b.key}" ${fait ? "disabled" : ""}><span class="ico" aria-hidden="true">${esc(b.icon)}</span>${esc(shown(b.label))}<span class="pts">${bas}</span></button>`;
           }).join("")}
         </div></div>
-        <div><h3>${t("Derniers points")}</h3>${hist.length ? `<ul class="history" style="margin-top:8px">${hist.map(e => `<li><span>${esc(shown(e.label))} <span class="when">${shortDate(e.at)}</span></span><span class="${e.points > 0 ? "plus" : "minus"}">${e.points > 0 ? "+" : ""}${e.points}</span></li>`).join("")}</ul>` : `<p class="hint" style="margin-top:8px">${t("Pas encore de points. Appuie sur un bouton au-dessus !")}</p>`}</div>
+        <div><h3>${t("Derniers points")}</h3>${hist.length ? `<ul class="history" data-style="margin-top:8px">${hist.map(e => `<li><span>${esc(shown(e.label))} <span class="when">${shortDate(e.at)}</span></span><span class="${e.points > 0 ? "plus" : "minus"}">${e.points > 0 ? "+" : ""}${e.points}</span></li>`).join("")}</ul>` : `<p class="hint" data-style="margin-top:8px">${t("Pas encore de points. Appuie sur un bouton au-dessus !")}</p>`}</div>
         <button class="btn-undo" data-undo="${k.id}" ${hist.length && !locked ? "" : "disabled"}>${locked ? t("🔒 Semaine terminée, plus rien à annuler") : t("↩︎ Annuler le dernier")}</button>
       </article>`;
     }).join("") : emptyKids();
@@ -466,7 +474,7 @@
     const st = settings();
     try { $("#today").textContent = t("Aujourd'hui : {date}", { date: new Date().toLocaleDateString(L.locale, { weekday: "long", day: "numeric", month: "long" }) }); } catch { /* sans effet */ }
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
-    $("#todo-kids").innerHTML = S.children.length ? S.children.map(k => `<article class="kid" style="${kidStyle(k)}">
+    $("#todo-kids").innerHTML = S.children.length ? S.children.map(k => `<article class="kid" data-style="${kidStyle(k)}">
       ${kidHead(k, "")}
       ${["matin", "soir"].map(part => {
         const r = st.routines[part], items = (r.items || []).filter(Boolean);
@@ -487,14 +495,14 @@
 
   function renderShop() {
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
-    $("#shop-wallets").innerHTML = S.children.map(k => `<div class="wallet" style="${kidStyle(k)}"><span class="wi" aria-hidden="true">${charOf(k).icon}</span><span>${esc(k.name)}</span><b>${total(k.id)}</b></div>`).join("");
+    $("#shop-wallets").innerHTML = S.children.map(k => `<div class="wallet" data-style="${kidStyle(k)}"><span class="wi" aria-hidden="true">${charOf(k).icon}</span><span>${esc(k.name)}</span><b>${total(k.id)}</b></div>`).join("");
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#shop-items").innerHTML = S.rewards.length ? byCost().map(r => {
       const kids = S.children.filter(k => !r.child_ids || !r.child_ids.length || r.child_ids.includes(k.id));
       return `<article class="item"><div class="item-ico" aria-hidden="true">${esc(r.icon)}</div>
         <h3 class="item-t">${esc(shown(r.title))}</h3><p class="price">${t("{n} points", { n: costOf(r) })}</p>
         <div class="buy-row">${kids.map(k => { const tot = total(k.id), ok = tot >= costOf(r), key = "shop|" + k.id + "|" + r.id, conf = S.confirmKey === key;
-          return `<button class="btn-buy ${conf ? "confirm" : ""}" style="${kidStyle(k)}" data-buy="${k.id}|${r.id}" ${ok ? "" : "disabled"}>${conf ? t("Sûr ? Oui !") : ok ? t("Acheter pour {name}", { name: esc(k.name) }) : t("{name} : encore {n}", { name: esc(k.name), n: costOf(r) - tot })}</button>`; }).join("")}</div></article>`;
+          return `<button class="btn-buy ${conf ? "confirm" : ""}" data-style="${kidStyle(k)}" data-buy="${k.id}|${r.id}" ${ok ? "" : "disabled"}>${conf ? t("Sûr ? Oui !") : ok ? t("Acheter pour {name}", { name: esc(k.name) }) : t("{name} : encore {n}", { name: esc(k.name), n: costOf(r) - tot })}</button>`; }).join("")}</div></article>`;
     }).join("") : `<div class="empty">${t("Le catalogue est vide.")}${isAdmin() ? t(" Ajoute des récompenses dans {link}.", { link: `<a href="#admin">${t("⚙️ Administration")}</a>` }) : ""}</div>`;
     const bought = S.events.filter(e => e.points < 0).sort((a, b) => b.at - a.at).slice(0, 10);
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
@@ -529,7 +537,7 @@
         if (!fut) { poss += 2; done += (m.m ? 1 : 0) + (m.s ? 1 : 0); best = Math.max(best, p); }
         return `<div class="w-day ${dk === todayK ? "today" : ""} ${fut ? "future" : ""}">${n}<div class="w-dots"><i class="w-dot ${m.m ? "ok" : ""}"></i><i class="w-dot ${m.s ? "ok" : ""}"></i></div><span class="w-pts">${fut ? "·" : p ? "+" + p : "0"}</span></div>`; }).join("");
       const b = st.buys[k.id][dayKey(mon)];
-      return `<article class="kid" style="${kidStyle(k)}">
+      return `<article class="kid" data-style="${kidStyle(k)}">
         ${kidHead(k, `<div class="w-goal"><b>${tot}</b>${t("points cette semaine")}</div>`)}
         <div class="w-days">${days}</div>
         <div class="w-stats"><div class="w-stat"><b>${done}/${poss}</b><span>${t("missions faites")}</span></div><div class="w-stat"><b>${best}</b><span>${t("meilleur jour")}</span></div><div class="w-stat"><b>${b ? esc(b.map(shown).join(", ")) : "—"}</b><span>${t("acheté")}</span></div></div>
@@ -556,7 +564,7 @@
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#wk-past").innerHTML = past.length && kids.length ? past.map(w => `<article class="w-week"><div class="w-when">${t("Semaine")} <span title="${t("Semaine terminée : ses points ne changent plus")}">🔒</span><small>${shortDate(w)} – ${shortDate(addDays(w, 6))}</small></div><div class="w-week-kids">
       ${kids.map(k => { const p = weekTotal(st, k.id, w), b = st.buys[k.id][dayKey(w)];
-        return `<div class="w-wk" style="${kidStyle(k)}"><div class="w-row"><span class="w-n">${esc(k.name)}</span><span>${p} pts</span></div>
+        return `<div class="w-wk" data-style="${kidStyle(k)}"><div class="w-row"><span class="w-n">${esc(k.name)}</span><span>${p} pts</span></div>
         <span class="w-note">${b ? "🎁 " + esc(b.map(shown).join(", ")) : t("Rien acheté")}</span></div>`; }).join("")}</div></article>`).join("")
       : `<p class="w-empty">${t("Pas encore de semaine terminée. La première apparaîtra ici lundi prochain.")}</p>`;
     renderYear(st);
@@ -581,10 +589,10 @@
         if (p) svg += `<rect x="${x}" y="${yy}" width="${cell}" height="${cell}" rx="3" fill="${col}" opacity="${p < 4 ? .35 : p < 7 ? .65 : 1}"><title>${t("{date} : {n} points", { date: shortDate(d), n: p })}</title></rect>`;
         if (dk === todayK) svg += `<rect x="${x - 1}" y="${yy - 1}" width="${cell + 2}" height="${cell + 2}" rx="4" fill="none" stroke="var(--gold)" stroke-width="2"/>`;
       }
-      return `<div class="year-kid"><div class="year-name"><span style="color:${col}">${charOf(k).icon} ${esc(k.name)}</span><span>${t("{n} points en {year}", { n: yearTot, year: yr })}</span></div>
+      return `<div class="year-kid"><div class="year-name"><span data-style="color:${col}">${charOf(k).icon} ${esc(k.name)}</span><span>${t("{n} points en {year}", { n: yearTot, year: yr })}</span></div>
         <div class="year-scroll">${svg}</svg></div>
         <div class="months">${MONTHS.map((m, i) => `<div class="month">${m}<b>${mt[i]}</b></div>`).join("")}</div></div>`;
-    }).join("") + `<p class="w-empty" style="font-size:13px">${t("Chaque petit carré est un jour. Plus il est foncé, plus il y a eu de points ce jour-là.")}</p>` : emptyKids();
+    }).join("") + `<p class="w-empty" data-style="font-size:13px">${t("Chaque petit carré est un jour. Plus il est foncé, plus il y a eu de points ce jour-là.")}</p>` : emptyKids();
   }
 
   // ───── Administration ─────
@@ -604,7 +612,7 @@
     const sum = f => rows.reduce((a, r) => a + r[f], 0);
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#report").innerHTML = `<thead><tr>${["Enfant", "Gagnés", "Dépensés", "Valeur gagnée", "Solde", "Valeur du solde"].map(h => `<th>${t(h)}</th>`).join("")}</tr></thead>
-      <tbody>${rows.length ? rows.map(r => `<tr><td style="color:${charOf(r.k).color}">${charOf(r.k).icon} ${esc(r.k.name)}</td><td>${r.won} pts</td><td>${r.spent} pts</td><td>${euro(r.won * rate)}</td><td>${r.bal} pts</td><td>${euro(r.bal * rate)}</td></tr>`).join("") : `<tr><td colspan="6">${t("Pas encore d'enfant.")}</td></tr>`}</tbody>
+      <tbody>${rows.length ? rows.map(r => `<tr><td data-style="color:${charOf(r.k).color}">${charOf(r.k).icon} ${esc(r.k.name)}</td><td>${r.won} pts</td><td>${r.spent} pts</td><td>${euro(r.won * rate)}</td><td>${r.bal} pts</td><td>${euro(r.bal * rate)}</td></tr>`).join("") : `<tr><td colspan="6">${t("Pas encore d'enfant.")}</td></tr>`}</tbody>
       ${rows.length ? `<tfoot><tr><td>${t("Total famille")}</td><td>${sum("won")} pts</td><td>${sum("spent")} pts</td><td>${euro(sum("won") * rate)}</td><td>${sum("bal")} pts</td><td>${euro(sum("bal") * rate)}</td></tr></tfoot>` : ""}`;
   }
   $("#rate-form").addEventListener("submit", async e => {
@@ -622,12 +630,12 @@
     $("#invite-code").textContent = S.family.invite_code || "";
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#admin-kids").innerHTML = S.children.length ? S.children.map(k => { const c = charOf(k), delKey = "delkid|" + k.id;
-      return `<div class="akid" style="${kidStyle(k)}"><span class="avatar" aria-hidden="true">${c.icon}</span><div class="grow"><b>${esc(k.name)}</b><small>${esc(c.name)}</small></div>
+      return `<div class="akid" data-style="${kidStyle(k)}"><span class="avatar" aria-hidden="true">${c.icon}</span><div class="grow"><b>${esc(k.name)}</b><small>${esc(c.name)}</small></div>
         <button class="btn ghost small" data-editkid="${k.id}">${t("Modifier")}</button><button class="btn ghost small" data-delkid="${k.id}">${t(S.confirmKey === delKey ? "Sûr ? Ses points seront effacés" : "Supprimer")}</button></div>`; }).join("")
       : `<p class="hint">${t("Pas encore d'enfant. Ajoute le premier avec le formulaire ci-dessous.")}</p>`;
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#admin-rewards").innerHTML = S.rewards.length ? byCost().map(r => { const who = !r.child_ids || !r.child_ids.length ? t("Pour tous") : t("Pour {names}", { names: r.child_ids.map(id => (kidById(id) || {}).name).filter(Boolean).map(esc).join(", ") }), key = "delrw|" + r.id;
-      return `<div class="akid"><span class="avatar" aria-hidden="true" style="border-color:var(--gold)">${esc(r.icon)}</span><div class="grow"><b style="color:var(--ink)">${esc(shown(r.title))}</b><small>${t("{n} points (≈ {eur}) · {who}", { n: costOf(r), eur: euro(Number(r.price_eur) > 0 ? Number(r.price_eur) : r.cost * settings().euroPerPoint), who })}</small></div><button class="btn ghost small" data-delrw="${r.id}">${t(S.confirmKey === key ? "Sûr ? Enlever" : "Enlever")}</button></div>`; }).join("")
+      return `<div class="akid"><span class="avatar" aria-hidden="true" data-style="border-color:var(--gold)">${esc(r.icon)}</span><div class="grow"><b data-style="color:var(--ink)">${esc(shown(r.title))}</b><small>${t("{n} points (≈ {eur}) · {who}", { n: costOf(r), eur: euro(Number(r.price_eur) > 0 ? Number(r.price_eur) : r.cost * settings().euroPerPoint), who })}</small></div><button class="btn ghost small" data-delrw="${r.id}">${t(S.confirmKey === key ? "Sûr ? Enlever" : "Enlever")}</button></div>`; }).join("")
       : `<p class="hint">${t("Aucune récompense pour l'instant.")}</p>`;
     const forSel = $("#rw-for"), cur = forSel.value;
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
@@ -662,7 +670,7 @@
 
   function renderCharPicker() {
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
-    $("#char-picker").innerHTML = window.CHARACTERS.map(L.char).map(c => `<button type="button" class="char" style="--c:${c.color}" data-char="${c.id}" aria-pressed="${c.id === S.pickedChar}"><span class="ci" aria-hidden="true">${c.icon}</span><b>${esc(c.name)}</b><small>${esc(c.powerName)}</small></button>`).join("");
+    $("#char-picker").innerHTML = window.CHARACTERS.map(L.char).map(c => `<button type="button" class="char" data-style="--c:${c.color}" data-char="${c.id}" aria-pressed="${c.id === S.pickedChar}"><span class="ci" aria-hidden="true">${c.icon}</span><b>${esc(c.name)}</b><small>${esc(c.powerName)}</small></button>`).join("");
   }
   function resetKidForm() {
     S.editingKid = null; S.pickedChar = window.CHARACTERS[S.children.length % window.CHARACTERS.length].id;
