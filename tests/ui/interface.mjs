@@ -44,11 +44,11 @@ await vue("#catalogue");
 verifier(await p.locator("#shop-items .item").count() === 3, "une nouvelle famille a le catalogue de départ (3 récompenses)");
 await vue("#admin");
 verifier(await p.inputValue("#rate") === "8", "par défaut, le budget maximum est de 8 € par semaine et par enfant");
-verifier((await p.textContent("#rate-info")).includes("70 points"), "le site calcule 70 points au maximum par semaine");
-verifier((await p.textContent("#rate-info")).includes("0,11"), "1 point vaut environ 0,11 €");
+verifier((await p.textContent("#rate-info")).includes("98 points"), "avec les poids 2, 3, 2 et 3, le site calcule 98 points par semaine (environ 100)");
+verifier((await p.textContent("#rate-info")).includes("0,08"), "8 € pour 98 points : 1 point vaut environ 0,08 €");
 await vue("#points");
 await p.click('[data-earn$="|t:0"]'); await attendre(300);
-verifier((await p.textContent(".kid .total b")).trim() === "2", "« Chambre rangée » donne 2 points");
+verifier((await p.textContent(".kid .total b")).trim() === "3", "« Chambre rangée » (poids 2) donne 3 points");
 verifier(await p.isDisabled('[data-earn$="|t:0"]'), "« Chambre rangée » ne se donne qu'une fois par jour");
 await p.click('[data-earn$="|r:soir"]'); await attendre(300);
 verifier(await p.isVisible("#todo-kids"), "les missions du soir se gagnent sur la page des missions");
@@ -56,7 +56,7 @@ const cases = await p.locator('.kid [data-item^="soir:"]').count();
 for (let i = 0; i < cases; i++) { await p.locator('.kid [data-item^="soir:"]:not(.done)').first().click(); await attendre(1200); }
 await p.click('[data-bonus$="|soir"]'); await attendre(300);
 await vue("#points");
-verifier((await p.textContent(".kid .total b")).trim() === "5", "les missions du soir cochées donnent 3 points de plus");
+verifier((await p.textContent(".kid .total b")).trim() === "7", "les missions du soir cochées (poids 3) donnent 4 points de plus");
 verifier(await p.isDisabled('[data-earn$="|r:soir"]'), "les missions du soir sont marquées « fait aujourd'hui » sur Mes points");
 await vue("#a-faire");
 await p.click('[data-unbonus$="|soir"]'); await attendre(200);
@@ -64,7 +64,7 @@ verifier(await p.isVisible('[data-unbonus$="|soir"].confirm'), "annuler les miss
 await p.click('[data-unbonus$="|soir"]'); await attendre(300);
 verifier(await p.isVisible('[data-bonus$="|soir"]'), "après annulation, le bouton pour prendre les points revient");
 await vue("#points");
-verifier((await p.textContent(".kid .total b")).trim() === "2", "annuler les missions du soir retire les 3 points");
+verifier((await p.textContent(".kid .total b")).trim() === "3", "annuler les missions du soir retire les 4 points");
 
 verifier(await p.isHidden("#super-btn") && await p.isHidden("#logout") && await p.isHidden("#logout-top"), "en haut, plus de boutons super admin, salon ni déconnexion pour un administrateur");
 await vue("#admin");

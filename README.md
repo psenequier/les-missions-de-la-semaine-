@@ -30,7 +30,7 @@ Chaque famille a ses propres données : la base refuse à une famille de lire ou
 
 1. Créer un compte (e-mail et mot de passe), puis confirmer l'adresse avec le lien reçu.
 2. Créer sa famille : on en devient l'administrateur.
-3. Dans **⚙️ Administration** : ajouter les enfants et leur personnage, régler les missions, les points, les récompenses et le budget maximum par semaine et par enfant (par défaut 8 €, soit 70 points avec les missions de départ).
+3. Dans **⚙️ Administration** : ajouter les enfants et leur personnage, régler les missions et leur poids (le site répartit environ 100 points par semaine et par enfant), les récompenses et le budget maximum par semaine et par enfant (8 € par défaut).
 4. Un autre adulte peut rejoindre la famille avec le **code d'invitation** affiché dans l'administration.
 
 ## Sur téléphone et tablette

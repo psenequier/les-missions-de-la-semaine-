@@ -146,9 +146,9 @@ begin
   insert into families (name, created_by) values (trim(fname), auth.uid()) returning id into fid;
   -- Catalogue de départ, modifiable ensuite dans l'administration
   insert into rewards (family_id, title, icon, cost) values
-    (fid, 'Un Legami',      '🖍️', 20),
-    (fid, 'Un livre',       '📘', 70),
-    (fid, 'Un grand livre', '📕', 90);
+    (fid, 'Un Legami',      '🖍️', 24),
+    (fid, 'Un livre',       '📘', 88),
+    (fid, 'Un grand livre', '📕', 159);
   return fid;
 end $$;
 revoke all on function public.create_family(text) from public, anon;
