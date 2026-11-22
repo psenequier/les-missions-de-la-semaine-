@@ -40,6 +40,13 @@
     return;
   }
   const sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey);
+  // Bouton de don (facultatif, pour les parents administrateurs) : un simple lien vers une page Ko-fi,
+  // sans script extérieur. Toute autre adresse est ignorée et le bouton reste caché.
+  const kofi = typeof CFG.kofi === "string" ? CFG.kofi.trim() : "";
+  if (/^https:\/\/ko-fi\.com\/[A-Za-z0-9_]{1,64}\/?$/.test(kofi)) {
+    $("#don-link").href = kofi;
+    show("#don-card", true);
+  }
 
   // ───────── État ─────────
   const S = {

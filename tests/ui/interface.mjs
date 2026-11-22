@@ -83,6 +83,35 @@ verifier(await p.evaluate(() => document.body.classList.contains("salon")), "le 
 await p.click("#salon-btn"); await attendre(200);
 verifier(await p.evaluate(() => !document.body.classList.contains("salon")), "le mode salon s'éteint");
 
+verifier(await p.isHidden("#don-card"), "sans lien Ko-fi dans config.js, pas de bouton de don");
+
+// Bouton de don : on change le lien Ko-fi de config.js pour cette page seulement.
+async function pageDon(lien) {
+  const q = await navigateur.newPage({ viewport: { width: 1000, height: 1300 } });
+  await q.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+  await q.route(/\/config\.js/, async r => {
+    const corps = await readFile(join(racine, "config.js"), "utf8");
+    await r.fulfill({ contentType: "text/javascript", body: corps.replace(/kofi:\s*"[^"]*"/, `kofi: ${JSON.stringify(lien)}`) });
+  });
+  await q.goto(U); await q.waitForTimeout(300);
+  await q.fill("#auth-email", "parent@exemple.test"); await q.fill("#auth-password", "motdepasse"); await q.click("#auth-submit"); await q.waitForTimeout(400);
+  await q.fill("#create-name", "Famille Don"); await q.click("#create-form button"); await q.waitForTimeout(600);
+  await q.evaluate(() => (location.hash = "#admin")); await q.waitForTimeout(250);
+  return q;
+}
+let q = await pageDon("https://ko-fi.com/essai_1");
+verifier(await q.isVisible("#don-card"), "avec un lien Ko-fi, le bouton « Soutenir le site » s'affiche dans l'administration");
+verifier(await q.getAttribute("#don-link", "href") === "https://ko-fi.com/essai_1", "le bouton mène à la page Ko-fi");
+verifier(await q.getAttribute("#don-link", "rel") === "noopener noreferrer" && await q.getAttribute("#don-link", "target") === "_blank", "la page Ko-fi s'ouvre à part, sans accès au site");
+await q.evaluate(() => (location.hash = "#points")); await q.waitForTimeout(250);
+verifier(await q.isHidden("#don-card"), "le bouton de don n'est pas sur la page des enfants");
+await q.close();
+for (const mauvais of ["javascript:alert(1)", "https://ko-fi.com.exemple.test/x", "http://ko-fi.com/x"]) {
+  q = await pageDon(mauvais);
+  verifier(await q.isHidden("#don-card"), `un lien qui n'est pas une page Ko-fi est refusé (${mauvais})`);
+  await q.close();
+}
+
 verifier(await p.evaluate(() => window.__xss) === undefined, "aucun texte piégé n'a exécuté de code");
 verifier(await p.locator("img").count() === 0, "aucune balise injectée dans la page");
 verifier(erreurs.length === 0, "aucune erreur JavaScript" + (erreurs.length ? " : " + erreurs.join(" | ") : ""));
