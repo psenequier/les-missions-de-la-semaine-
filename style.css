@@ -205,8 +205,9 @@ h3{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:v
 .task-row{display:grid;grid-template-columns:90px 1fr 110px auto;gap:8px;align-items:end}
 @media (max-width:560px){.task-row{grid-template-columns:80px 1fr 90px;}.task-row .btn{grid-column:1/-1;justify-self:start}}
 .don .btn{justify-self:start}
-/* Bouton « Soutenir Basile » : en haut à droite de « Mes points », reste visible quand on fait défiler */
-.don-pill{position:sticky;top:10px;z-index:5;justify-self:end;width:max-content;margin:0 0 -8px auto;display:block;text-decoration:none;font-size:14px;padding:7px 14px;box-shadow:0 2px 8px rgb(0 0 0 / 18%)}
+/* Bouton « Soutenir Basile » : en haut à droite, à côté des drapeaux, sur « Mes points » */
+.don-pill{display:inline-flex;align-items:center;height:30px;padding:0 12px;border:2px solid var(--gold);border-radius:10px;background:transparent;color:var(--ink);font-weight:800;font-size:14px;text-decoration:none;white-space:nowrap}
+.don-pill:hover,.don-pill:focus-visible{background:var(--gold);color:#2b2340}
 .danger{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
 .danger-btn{background:var(--bad);color:#fff;justify-self:start}
 .danger-btn.confirm{background:#8a1c1c}
@@ -275,7 +276,7 @@ body.salon #salon-btn{border-color:var(--gold);background:var(--gold);color:#2b2
 .account-row{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0}
 
 /* ───────── Langue : drapeaux 🇫🇷 / 🇬🇧 ───────── */
-.head-side{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.head-side{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-left:auto}
 .lang{display:flex;gap:6px}
 .flag{display:inline-flex;padding:3px;border:2px solid var(--line);border-radius:10px;background:var(--card);cursor:pointer;line-height:0;opacity:.55;transition:opacity .15s,border-color .15s}
 .flag svg{width:30px;height:20px;border-radius:4px;display:block}

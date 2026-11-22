@@ -42,10 +42,11 @@
   const sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey);
   // Bouton de don (facultatif, dans l'administration et en haut à droite de « Mes points ») : un simple lien vers une page Ko-fi,
   // sans script extérieur. Toute autre adresse est ignorée et le bouton reste caché.
-  const kofi = typeof CFG.kofi === "string" ? CFG.kofi.trim() : "";
-  if (/^https:\/\/ko-fi\.com\/[A-Za-z0-9_]{1,64}\/?$/.test(kofi)) {
+  const kofiBrut = typeof CFG.kofi === "string" ? CFG.kofi.trim() : "";
+  const kofi = /^https:\/\/ko-fi\.com\/[A-Za-z0-9_]{1,64}\/?$/.test(kofiBrut) ? kofiBrut : "";
+  if (kofi) {
     $("#don-link").href = kofi; $("#don-pill").href = kofi;
-    show("#don-card", true); show("#don-pill", true);
+    show("#don-card", true);
   }
 
   // ───────── État ─────────
@@ -791,6 +792,7 @@
     if (v === "admin" && !isAdmin()) v = "points";
     $$(".view").forEach(el => (el.hidden = el.dataset.view !== v));
     $$(".tab").forEach(t => t.setAttribute("aria-current", t.dataset.view === v ? "page" : "false"));
+    show("#don-pill", !!kofi && v === "points"); // « Soutenir Basile » : seulement sur « Mes points »
     if (v === "admin" && S.family && !S.adminFilled) fillAdminForms();
     if (v === "admin" && S.family) sb.from("family_members").select("user_id, role", { count: "exact" }).eq("family_id", S.family.id).then(({ data }) => {
       if (!data) return; const n = data.length, a = data.filter(m => m.role === "admin").length;

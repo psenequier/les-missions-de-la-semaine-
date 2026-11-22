@@ -108,12 +108,12 @@ await q.evaluate(() => (location.hash = "#points")); await q.waitForTimeout(250)
 verifier(await q.isHidden("#don-card"), "la carte de don de l'administration n'est pas sur « Mes points »");
 verifier(await q.isVisible("#don-pill") && await q.getAttribute("#don-pill", "href") === "https://ko-fi.com/essai_1", "« Soutenir Basile » est en haut de « Mes points » et mène à Ko-fi");
 const boite = await q.locator("#don-pill").boundingBox();
-verifier(boite && boite.x + boite.width > 900, "« Soutenir Basile » est à droite");
-await q.setViewportSize({ width: 1000, height: 500 });
-// La famille d'essai n'a pas d'enfant : on allonge la page pour pouvoir la faire défiler.
-await q.evaluate(() => { document.querySelector("#kids").style.minHeight = "2000px"; window.scrollTo(0, 1500); }); await q.waitForTimeout(300);
-const apres = await q.evaluate(() => ({ y: document.querySelector("#don-pill").getBoundingClientRect().y, defile: window.scrollY }));
-verifier(apres.defile > 0 && apres.y >= 0 && apres.y < 60, "« Soutenir Basile » reste visible quand on descend dans la page");
+verifier(boite && boite.x > 600, "« Soutenir Basile » est à droite");
+const place = await q.evaluate(() => {
+  const pill = document.querySelector("#don-pill").getBoundingClientRect(), tabs = document.querySelector(".tabs").getBoundingClientRect();
+  return { enTete: !!document.querySelector("#don-pill").closest(".head"), auDessus: pill.bottom <= tabs.top };
+});
+verifier(place.enTete && place.auDessus, "« Soutenir Basile » est dans l'en-tête, au-dessus des onglets, sans chevaucher les cartes");
 await q.evaluate(() => (location.hash = "#catalogue")); await q.waitForTimeout(250);
 verifier(await q.isHidden("#don-pill"), "« Soutenir Basile » n'est que sur « Mes points »");
 await q.close();
