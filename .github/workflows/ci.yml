@@ -172,6 +172,14 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      # Tests d'interface relancés ici pour relever la couverture du code (coverage/lcov.info)
+      - if: env.SONAR_TOKEN != ''
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - if: env.SONAR_TOKEN != ''
+        run: npm ci --ignore-scripts --no-audit --no-fund && npx playwright install --with-deps chromium && npm run test:interface
       - if: env.SONAR_TOKEN != ''
         uses: SonarSource/sonarqube-scan-action@e805d875275f728fac1885b413934be6d7c63f65 # v8.4.1
         with:
