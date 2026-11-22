@@ -23,7 +23,7 @@ Chaque famille a ses propres données : la base refuse à une famille de lire ou
    select id from auth.users where email = 'ton.adresse@exemple.fr'
    on conflict do nothing;
    ```
-   Le compte doit déjà exister (créé sur le site). Le bouton « 🛡️ Super admin » apparaît à la connexion suivante.
+   Le compte doit déjà exister (créé sur le site). Le bouton « 🛡️ Super admin » apparaît dans ⚙️ Administration à la connexion suivante.
    Si `schema.sql` a été lancé avant l'ajout du super admin, lancer d'abord `supabase/super-admin.sql`.
 
 ## Utilisation
@@ -37,7 +37,7 @@ Chaque famille a ses propres données : la base refuse à une famille de lire ou
 
 - Sur téléphone, les pages sont dans une barre en bas de l'écran.
 - **Ajouter à l'écran d'accueil** (menu Partager sur iPhone et iPad, menu ⋮ sur Android) : le site s'ouvre alors comme une application, en plein écran.
-- **📺 Mode salon** (bouton en haut) : pour une tablette posée dans le salon. L'écran reste allumé, et après 3 minutes sans toucher, la page revient sur « Mes points ». Le mode reste activé après un rechargement. Les points notés sur un autre appareil arrivent tout seuls, et la page des missions repart à zéro à minuit.
+- **📺 Mode salon** (dans ⚙️ Administration, carte « Mon compte et cet écran ») : pour une tablette posée dans le salon. L'écran reste allumé, et après 3 minutes sans toucher, la page revient sur « Mes points ». Le mode reste activé après un rechargement. Les points notés sur un autre appareil arrivent tout seuls, et la page des missions repart à zéro à minuit.
 - La tablette doit rester branchée. Si son navigateur ne sait pas garder l'écran allumé (vieux iPad), régler sa mise en veille sur « Jamais ».
 
 ## Fichiers

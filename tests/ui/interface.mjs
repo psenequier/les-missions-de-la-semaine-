@@ -66,6 +66,9 @@ verifier(await p.isVisible('[data-bonus$="|soir"]'), "après annulation, le bout
 await vue("#points");
 verifier((await p.textContent(".kid .total b")).trim() === "2", "annuler les missions du soir retire les 3 points");
 
+verifier(await p.isHidden("#super-btn") && await p.isHidden("#logout") && await p.isHidden("#logout-top"), "en haut, plus de boutons super admin, salon ni déconnexion pour un administrateur");
+await vue("#admin");
+verifier(await p.isVisible("#super-btn") && await p.isVisible("#salon-btn") && await p.isVisible("#logout"), "les boutons du compte sont dans l'onglet Administration");
 await p.click("#super-btn"); await attendre(400);
 verifier(await p.locator("#super-list tbody tr").count() === 2, "le super admin voit les 2 familles");
 await p.click('[data-visit="fx"]'); await attendre(500);
@@ -74,6 +77,7 @@ for (const h of ["#points", "#a-faire", "#catalogue", "#semaines", "#admin"]) aw
 await p.click("#visit-leave"); await attendre(500);
 verifier((await p.textContent("#title")) === "Famille Test" && await p.isHidden("#visit"), "retour à sa propre famille");
 
+await vue("#admin");
 await p.click("#salon-btn"); await attendre(200);
 verifier(await p.evaluate(() => document.body.classList.contains("salon")), "le mode salon s'allume");
 await p.click("#salon-btn"); await attendre(200);
