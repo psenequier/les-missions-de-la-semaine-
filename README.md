@@ -91,7 +91,7 @@ Sur le modèle de La Narbonnaise. À chaque pull request et sur `main` (`.github
 | `interface` | parcours complet dans Chromium avec une famille piégée : aucun code injecté ne s'exécute |
 | `sast` | CodeQL (JavaScript et workflows) et Semgrep (OWASP Top 10, JavaScript, secrets), résultats dans l'onglet Security |
 | `dependances` | `npm audit`, aucun `.env`, Gitleaks sur tout l'historique |
-| `sonar` | SonarCloud, seulement si le secret `SONAR_TOKEN` existe : relance les tests d'interface pour mesurer la couverture du code (`coverage/lcov.info`) |
+| `sonar` | SonarCloud, seulement si le secret `SONAR_TOKEN` existe ; bloque si la porte qualité échoue (variable `SONAR_BLOQUANT=non` pour ne plus bloquer) : relance les tests d'interface pour mesurer la couverture du code (`coverage/lcov.info`) |
 
 Chaque lundi (`hebdo.yml`) : scan ZAP actif de la copie du site servie dans la CI (jamais le site en ligne) et audit des dépendances.
 Dependabot propose les mises à jour des actions et des outils chaque lundi.
