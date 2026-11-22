@@ -204,6 +204,7 @@ h3{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:v
 .task-rows{display:grid;gap:8px}
 .task-row{display:grid;grid-template-columns:90px 1fr 110px auto;gap:8px;align-items:end}
 @media (max-width:560px){.task-row{grid-template-columns:80px 1fr 90px;}.task-row .btn{grid-column:1/-1;justify-self:start}}
+.don .btn{justify-self:start}
 .danger{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
 .danger-btn{background:var(--bad);color:#fff;justify-self:start}
 .danger-btn.confirm{background:#8a1c1c}

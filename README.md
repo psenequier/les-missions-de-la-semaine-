@@ -40,6 +40,16 @@ Chaque famille a ses propres données : la base refuse à une famille de lire ou
 - **📺 Mode salon** (dans ⚙️ Administration, carte « Mon compte et cet écran ») : pour une tablette posée dans le salon. L'écran reste allumé, et après 3 minutes sans toucher, la page revient sur « Mes points ». Le mode reste activé après un rechargement. Les points notés sur un autre appareil arrivent tout seuls, et la page des missions repart à zéro à minuit.
 - La tablette doit rester branchée. Si son navigateur ne sait pas garder l'écran allumé (vieux iPad), régler sa mise en veille sur « Jamais ».
 
+## Dons (Ko-fi)
+
+Le site est gratuit. Pour recevoir des dons, créer une page sur [ko-fi.com](https://ko-fi.com), puis mettre son adresse dans `config.js` :
+
+```js
+kofi: "https://ko-fi.com/monpseudo"
+```
+
+Un bouton « 💛 Soutenir le site » apparaît alors dans l'onglet Administration (les parents seulement, jamais sur les pages des enfants). C'est un simple lien : aucun script de Ko-fi n'est chargé sur le site. Laisser `kofi: ""` cache le bouton.
+
 ## Fichiers
 
 | Fichier | Rôle |
@@ -49,7 +59,7 @@ Chaque famille a ses propres données : la base refuse à une famille de lire ou
 | `app.js` | la logique (connexion, familles, points, rapport) |
 | `manifest.webmanifest`, `icone-*.png` | installation sur l'écran d'accueil |
 | `characters.js` | le catalogue des personnages et leurs pouvoirs |
-| `config.js` | l'adresse et la clé publique Supabase |
+| `config.js` | l'adresse et la clé publique Supabase, et le lien Ko-fi (facultatif) |
 | `supabase/schema.sql` | tables et règles de séparation des familles |
 | `supabase/catalogue-depart.sql` | catalogue de départ des nouvelles familles, pour une base déjà créée |
 | `supabase/une-fois-par-jour.sql` | chaque mission ne rapporte des points qu'une fois par jour, pour une base déjà créée |

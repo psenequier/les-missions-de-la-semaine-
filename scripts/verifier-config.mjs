@@ -34,6 +34,9 @@ if (cle && !/^(sb_publishable_|eyJ|COLLER)/.test(cle)) erreurs.push("config.js :
 const url = (config.match(/supabaseUrl:\s*"([^"]*)"/) || [])[1] || "";
 if (url && !/^https:\/\/[a-z0-9]+\.supabase\.co$|^COLLER/.test(url)) erreurs.push("config.js : l'adresse Supabase doit être en https://<projet>.supabase.co");
 
+const kofi = (config.match(/kofi:\s*"([^"]*)"/) || [])[1] || "";
+if (kofi && !/^https:\/\/ko-fi\.com\/[A-Za-z0-9_]{1,64}\/?$/.test(kofi)) erreurs.push("config.js : le lien de dons doit être en https://ko-fi.com/<pseudo>");
+
 if (erreurs.length) {
   for (const e of erreurs) console.log(`::error title=Clé Supabase::${e}`);
   process.exit(1);
