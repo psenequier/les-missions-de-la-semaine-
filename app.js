@@ -98,7 +98,11 @@
     S.screen = name; showTopLogout();
   }
   // Les boutons du compte sont dans l'onglet Administration ; sans cet onglet, on garde « Se déconnecter » en haut.
-  function showTopLogout() { show("#logout-top", !!S.user && S.screen !== "auth" && !(S.screen === "app" && S.family && isAdmin())); }
+  function showTopLogout() {
+    show("#logout-top", !!S.user && S.screen !== "auth" && !(S.screen === "app" && S.family && isAdmin()));
+    // Un simple membre n'a pas l'onglet Administration : il peut quitter la famille depuis le haut de la page.
+    show("#leave-top", S.screen === "app" && !!S.family && !isAdmin() && !S.visiting);
+  }
 
   // ───────── Comptes ─────────
   let authMode = "login";
@@ -205,6 +209,7 @@
     $("#title").textContent = S.family.name;
     $("#visit-text").textContent = visiting ? t("🛡️ Mode super admin : tu es dans la famille « {name} ».", { name: fam.name }) : "";
     show("#visit", visiting);
+    show("#family-out", !visiting); // le super admin en visite ne quitte ni ne supprime la famille des autres
     await loadAll();
     startRealtime();
     screen("app"); render(); showView();
@@ -721,6 +726,34 @@
     if (error) toast(OOPS); else toast(t("Les points de la semaine sont remis à zéro."));
     await Promise.all([fetchEvents(), fetchChecks()]); render();
   });
+
+  // ───────── Quitter ou supprimer la famille ─────────
+  // Il faut appuyer deux fois (la 2e fois dans les 5 secondes) : c'est la confirmation.
+  const OUT_TXT = {
+    "leave-btn": ["Quitter la famille", "Sûr ? Appuie encore pour quitter"],
+    "leave-top": ["Quitter la famille", "Sûr ? Appuie encore pour quitter"],
+    "delete-fam-btn": ["Supprimer la famille", "Sûr ? Tout sera effacé pour tout le monde"]
+  };
+  function confirmed(btn) {
+    const [normal, sure] = OUT_TXT[btn.id];
+    if (S.outArmed === btn.id) { S.outArmed = null; btn.textContent = t(normal); btn.classList.remove("confirm"); return true; }
+    S.outArmed = btn.id; btn.textContent = t(sure); btn.classList.add("confirm");
+    setTimeout(() => { if (S.outArmed === btn.id) { S.outArmed = null; btn.textContent = t(normal); btn.classList.remove("confirm"); } }, 5000);
+    return false;
+  }
+  async function leaveOrDelete(btn, fn, done) {
+    if (!S.family || S.visiting || !confirmed(btn)) return;
+    btn.disabled = true;
+    const { error } = await sb.rpc(fn, { fid: S.family.id });
+    btn.disabled = false;
+    if (error) return toast(OOPS);
+    stopRealtime(); S.family = null; store.set("points-family", "");
+    if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+    toast(done);
+    await loadFamilies(); // plus de famille : retour au choix « Créer » ou « Rejoindre »
+  }
+  ["#leave-btn", "#leave-top"].forEach(id => $(id).addEventListener("click", e => leaveOrDelete(e.currentTarget, "leave_family", t("Tu as quitté la famille."))));
+  $("#delete-fam-btn").addEventListener("click", e => leaveOrDelete(e.currentTarget, "delete_family", t("La famille a été supprimée.")));
 
   // ───────── Clics ─────────
   document.addEventListener("click", async e => {

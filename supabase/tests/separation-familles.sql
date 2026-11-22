@@ -170,6 +170,27 @@ select test.egal((select count(*) from rewards where family_id = :'fn' and title
 select test.egal((select count(*) from rewards where family_id = :'fm'), 0, 'la nouvelle famille ne voit pas la famille modèle');
 select test.egal((select count(*) from children where family_id = :'fm'), 0, 'la nouvelle famille ne voit pas les enfants de la famille modèle');
 
+-- Quitter ou supprimer une famille
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+select test.refuse(format('select public.delete_family(%L)', :'fa'), 'B supprime la famille A');
+select test.refuse(format('select public.leave_family(%L)', :'fa'), 'B quitte une famille dont il ne fait pas partie');
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';
+select test.refuse(format('select public.delete_family(%L)', :'fa'), 'un simple membre supprime la famille');
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select public.leave_family(:'fa');
+select test.egal((select count(*) from families where id = :'fa'), 0, 'le parent A ne voit plus la famille qu''il a quittée');
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';
+select test.egal((select count(*) from families where id = :'fa'), 1, 'la famille reste pour le conjoint');
+select test.egal((select public.is_admin(:'fa')::int), 1, 'le dernier administrateur parti, le conjoint devient administrateur');
+select public.delete_family(:'fa');
+reset role;
+select test.egal((select count(*) from families where id = :'fa'), 0, 'supprimer la famille l''efface');
+select test.egal((select count(*) from children where family_id = :'fa') + (select count(*) from events where family_id = :'fa') + (select count(*) from rewards where family_id = :'fa') + (select count(*) from family_members where family_id = :'fa'), 0, 'supprimer la famille efface ses enfants, points, récompenses et adultes');
+set role authenticated; set request.jwt.claim.sub = '55555555-5555-5555-5555-555555555555';
+select public.leave_family(:'fn');
+reset role;
+select test.egal((select count(*) from families where id = :'fn'), 0, 'le seul adulte qui quitte sa famille la supprime');
+
 reset role;
 \o
 \echo 'Tous les tests de séparation des familles sont passés.'
