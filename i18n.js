@@ -104,6 +104,15 @@
       "The site is free and has no ads. If you'd like to help keep it going, you can make a small donation. It's completely optional.",
     "💛 Faire un don sur Ko-fi": "💛 Donate on Ko-fi",
     "Remettre la semaine à zéro": "Reset this week",
+    "Quitter la famille": "Leave the family",
+    "Supprimer la famille": "Delete the family",
+    "Quitter ou supprimer la famille": "Leave or delete the family",
+    "Quitter : tu ne fais plus partie de cette famille, les autres adultes la gardent. Si tu étais le seul administrateur, l'adulte arrivé le plus tôt le devient. Si tu es le seul adulte, la famille est supprimée.": "Leave: you are no longer part of this family, the other adults keep it. If you were the only admin, the adult who joined first becomes admin. If you are the only adult, the family is deleted.",
+    "Supprimer : efface la famille, ses enfants, ses points et ses récompenses, pour tous les adultes. On ne peut pas revenir en arrière.": "Delete: erases the family, its children, points and rewards, for every adult. This cannot be undone.",
+    "Sûr ? Appuie encore pour quitter": "Sure? Tap again to leave",
+    "Sûr ? Tout sera effacé pour tout le monde": "Sure? Everything will be erased for everyone",
+    "Tu as quitté la famille.": "You left the family.",
+    "La famille a été supprimée.": "The family has been deleted.",
     "Efface les points et les achats de la semaine en cours. Les semaines terminées ne changent plus : elles restent, comme les enfants, missions et récompenses.":
       "Erases this week's points and purchases. Finished weeks can no longer change: they stay, along with the children, missions and rewards.",
 

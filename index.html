@@ -35,6 +35,7 @@
     <div class="who" id="who" hidden>
       <select id="family-switch" aria-label="Changer de famille" hidden></select>
       <!-- Pour les parents sans onglet Administration (et avant d'avoir une famille) -->
+      <button type="button" class="btn ghost small" id="leave-top" hidden>Quitter la famille</button>
       <button type="button" class="btn ghost small" id="logout-top" hidden>Se déconnecter</button>
     </div>
     </div>
@@ -237,6 +238,16 @@
         <h2 class="sec">Remettre la semaine à zéro</h2>
         <p class="hint">Efface les points et les achats de la semaine en cours. Les semaines terminées ne changent plus : elles restent, comme les enfants, missions et récompenses.</p>
         <button type="button" class="btn danger-btn" id="reset-btn">Remettre la semaine à zéro</button>
+      </div>
+
+      <div class="card danger" id="family-out">
+        <h2 class="sec">Quitter ou supprimer la famille</h2>
+        <p class="hint">Quitter : tu ne fais plus partie de cette famille, les autres adultes la gardent. Si tu étais le seul administrateur, l'adulte arrivé le plus tôt le devient. Si tu es le seul adulte, la famille est supprimée.</p>
+        <p class="hint">Supprimer : efface la famille, ses enfants, ses points et ses récompenses, pour tous les adultes. On ne peut pas revenir en arrière.</p>
+        <div class="account-row">
+          <button type="button" class="btn ghost" id="leave-btn">Quitter la famille</button>
+          <button type="button" class="btn danger-btn" id="delete-fam-btn">Supprimer la famille</button>
+        </div>
       </div>
     </section>
   </div>

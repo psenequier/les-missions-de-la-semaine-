@@ -97,6 +97,8 @@ await p.click("#super-btn"); await attendre(400);
 verifier(await p.locator("#super-list tbody tr").count() === 2, "le super admin voit les 2 familles");
 await p.click('[data-visit="fx"]'); await attendre(500);
 verifier(await p.isVisible("#visit"), "le bandeau « mode super admin » s'affiche");
+await vue("#admin");
+verifier(await p.isHidden("#family-out") && await p.isHidden("#leave-top"), "en visite, le super admin ne peut ni quitter ni supprimer la famille");
 for (const h of ["#points", "#a-faire", "#catalogue", "#semaines", "#admin"]) await vue(h);
 await p.click("#visit-leave"); await attendre(500);
 verifier((await p.textContent("#title")) === "Famille Test" && await p.isHidden("#visit"), "retour à sa propre famille");
@@ -139,6 +141,18 @@ const place = await q.evaluate(() => {
 verifier(place.enTete && place.auDessus, "« Soutenir Basile » est dans l'en-tête, au-dessus des onglets, sans chevaucher les cartes");
 await q.evaluate(() => (location.hash = "#catalogue")); await q.waitForTimeout(250);
 verifier(await q.isHidden("#don-pill"), "« Soutenir Basile » n'est que sur « Mes points »");
+await q.close();
+// Quitter / supprimer la famille : deux appuis, puis retour au choix « Créer » ou « Rejoindre »
+q = await pageDon("");
+verifier(await q.isVisible("#family-out") && await q.isHidden("#leave-top"), "l'administrateur quitte ou supprime la famille depuis l'administration");
+await q.click("#delete-fam-btn"); await q.waitForTimeout(200);
+verifier(await q.isVisible("#app") && (await q.textContent("#delete-fam-btn")).includes("Sûr"), "supprimer la famille demande une confirmation");
+await q.click("#delete-fam-btn"); await q.waitForTimeout(600);
+verifier(await q.isVisible("#onboard") && await q.evaluate(() => !window.__db.families.some(f => f.name === "Famille Don")), "après suppression, retour au choix créer ou rejoindre");
+await q.fill("#create-name", "Famille Bis"); await q.click("#create-form button"); await q.waitForTimeout(600);
+await q.evaluate(() => (location.hash = "#admin")); await q.waitForTimeout(250);
+await q.click("#leave-btn"); await q.waitForTimeout(200); await q.click("#leave-btn"); await q.waitForTimeout(600);
+verifier(await q.isVisible("#onboard"), "le seul adulte qui quitte la famille revient au choix créer ou rejoindre");
 await q.close();
 q = await pageDon("");
 verifier(await q.isHidden("#don-card") && await q.isHidden("#don-pill"), "sans lien Ko-fi dans config.js, pas de bouton de don");
