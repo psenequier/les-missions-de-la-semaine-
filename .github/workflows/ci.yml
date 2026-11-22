@@ -159,7 +159,7 @@ jobs:
 
   sonar:
     # SonarCloud (gratuit pour un dépôt public). Sans le secret SONAR_TOKEN, le job passe sans analyser.
-    # Porte qualité bloquante seulement avec la variable SONAR_BLOQUANT=oui.
+    # Porte qualité bloquante (la CI échoue si SonarCloud refuse). Pour la rendre non bloquante : variable SONAR_BLOQUANT=non.
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
@@ -184,4 +184,4 @@ jobs:
         uses: SonarSource/sonarqube-scan-action@e805d875275f728fac1885b413934be6d7c63f65 # v8.4.1
         with:
           args: >-
-            -Dsonar.qualitygate.wait=${{ vars.SONAR_BLOQUANT == 'oui' && 'true' || 'false' }}
+            -Dsonar.qualitygate.wait=${{ vars.SONAR_BLOQUANT != 'non' && 'true' || 'false' }}
