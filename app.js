@@ -90,6 +90,8 @@
   // Elle suit donc le budget et les missions. Sans prix en euros (base pas encore à jour), on garde ses points enregistrés.
   const pointsFor = eur => { const rate = settings().euroPerPoint; return rate > 0 && eur > 0 ? Math.max(1, Math.round(eur / rate)) : 0; };
   const costOf = r => (Number(r.price_eur) > 0 && pointsFor(Number(r.price_eur))) || r.cost;
+  // Récompenses de la moins chère à la plus chère, avec les points du moment (ils suivent le budget et les missions)
+  const byCost = () => [...S.rewards].sort((a, b) => costOf(a) - costOf(b) || String(a.created_at).localeCompare(String(b.created_at)));
   const kidById = id => S.children.find(k => k.id === id);
   const charOf = kid => L.char(window.characterById(kid && kid.character));
   const total = kidId => S.events.reduce((a, e) => a + (e.child_id === kidId ? e.points : 0), 0);
@@ -330,7 +332,7 @@
         return sb.from("rewards").update({ price_eur: r.price_eur }).eq("id", r.id);
       }));
     }
-    S.rewards = data.sort((a, b) => costOf(a) - costOf(b));
+    S.rewards = data;
   }
   async function fetchChecks() {
     const day = dayKey();
@@ -485,7 +487,7 @@
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#shop-wallets").innerHTML = S.children.map(k => `<div class="wallet" style="${kidStyle(k)}"><span class="wi" aria-hidden="true">${charOf(k).icon}</span><span>${esc(k.name)}</span><b>${total(k.id)}</b></div>`).join("");
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
-    $("#shop-items").innerHTML = S.rewards.length ? S.rewards.map(r => {
+    $("#shop-items").innerHTML = S.rewards.length ? byCost().map(r => {
       const kids = S.children.filter(k => !r.child_ids || !r.child_ids.length || r.child_ids.includes(k.id));
       return `<article class="item"><div class="item-ico" aria-hidden="true">${esc(r.icon)}</div>
         <h3 class="item-t">${esc(shown(r.title))}</h3><p class="price">${t("{n} points", { n: costOf(r) })}</p>
@@ -611,7 +613,7 @@
     delete next.euroPerPoint;
     const { error } = await sb.from("families").update({ settings: next }).eq("id", S.family.id);
     if (error) return toast(OOPS);
-    S.family.settings = next; S.rewards.sort((a, b) => costOf(a) - costOf(b)); render(); toast(t("Budget de la semaine enregistré ✓"));
+    S.family.settings = next; render(); toast(t("Budget de la semaine enregistré ✓"));
   });
   function renderAdminLists() {
     renderReport();
@@ -622,7 +624,7 @@
         <button class="btn ghost small" data-editkid="${k.id}">${t("Modifier")}</button><button class="btn ghost small" data-delkid="${k.id}">${t(S.confirmKey === delKey ? "Sûr ? Ses points seront effacés" : "Supprimer")}</button></div>`; }).join("")
       : `<p class="hint">${t("Pas encore d'enfant. Ajoute le premier avec le formulaire ci-dessous.")}</p>`;
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
-    $("#admin-rewards").innerHTML = S.rewards.length ? S.rewards.map(r => { const who = !r.child_ids || !r.child_ids.length ? t("Pour tous") : t("Pour {names}", { names: r.child_ids.map(id => (kidById(id) || {}).name).filter(Boolean).map(esc).join(", ") }), key = "delrw|" + r.id;
+    $("#admin-rewards").innerHTML = S.rewards.length ? byCost().map(r => { const who = !r.child_ids || !r.child_ids.length ? t("Pour tous") : t("Pour {names}", { names: r.child_ids.map(id => (kidById(id) || {}).name).filter(Boolean).map(esc).join(", ") }), key = "delrw|" + r.id;
       return `<div class="akid"><span class="avatar" aria-hidden="true" style="border-color:var(--gold)">${esc(r.icon)}</span><div class="grow"><b style="color:var(--ink)">${esc(shown(r.title))}</b><small>${t("{n} points (≈ {eur}) · {who}", { n: costOf(r), eur: euro(Number(r.price_eur) > 0 ? Number(r.price_eur) : r.cost * settings().euroPerPoint), who })}</small></div><button class="btn ghost small" data-delrw="${r.id}">${t(S.confirmKey === key ? "Sûr ? Enlever" : "Enlever")}</button></div>`; }).join("")
       : `<p class="hint">${t("Aucune récompense pour l'instant.")}</p>`;
     const forSel = $("#rw-for"), cur = forSel.value;

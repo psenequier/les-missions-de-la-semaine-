@@ -161,9 +161,9 @@ begin
   else
     -- Sans modèle : catalogue fixe, au prix réel (1 point ≈ 0,08 € avec le budget par défaut)
     insert into rewards (family_id, title, icon, cost, price_eur) values
-      (fid, 'Un Legami',      '🖍️', 24,  1.95),
+      (fid, 'Un Legami',      '🖍️', 25,  2.00),
       (fid, 'Un livre',       '📘', 88,  7.20),
-      (fid, 'Un grand livre', '📕', 159, 13.00);
+      (fid, 'Un grand livre', '📕', 98,  8.00);
   end if;
   return fid;
 end $$;
