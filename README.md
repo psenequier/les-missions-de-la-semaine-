@@ -40,6 +40,13 @@ Chaque famille a ses propres données : la base refuse à une famille de lire ou
 - **📺 Mode salon** (dans ⚙️ Administration, carte « Mon compte et cet écran ») : pour une tablette posée dans le salon. L'écran reste allumé, et après 3 minutes sans toucher, la page revient sur « Mes points ». Le mode reste activé après un rechargement. Les points notés sur un autre appareil arrivent tout seuls, et la page des missions repart à zéro à minuit.
 - La tablette doit rester branchée. Si son navigateur ne sait pas garder l'écran allumé (vieux iPad), régler sa mise en veille sur « Jamais ».
 
+## Langues (français et anglais)
+
+Le site existe en français et en anglais. Par défaut, il prend la langue de l'appareil : français si le téléphone, la tablette ou l'ordinateur est réglé en français, anglais sinon.
+Les drapeaux 🇫🇷 et 🇬🇧 en haut de la page changent la langue ; le choix reste sur cet appareil.
+
+Les textes du site sont dans `i18n.js`. Ce que les familles écrivent (prénoms, missions, récompenses) n'est pas traduit, sauf les missions et le catalogue de départ proposés par le site, qui s'affichent dans la langue choisie.
+
 ## Dons (Ko-fi)
 
 Le site est gratuit. Pour recevoir des dons, créer une page sur [ko-fi.com](https://ko-fi.com), puis mettre son adresse dans `config.js` :
@@ -59,6 +66,7 @@ Un bouton « 💛 Soutenir le site » apparaît alors dans l'onglet Administrati
 | `app.js` | la logique (connexion, familles, points, rapport) |
 | `manifest.webmanifest`, `icone-*.png` | installation sur l'écran d'accueil |
 | `characters.js` | le catalogue des personnages et leurs pouvoirs |
+| `i18n.js` | les langues : textes en anglais, choix de la langue, drapeaux |
 | `config.js` | l'adresse et la clé publique Supabase, et le lien Ko-fi (facultatif) |
 | `supabase/schema.sql` | tables et règles de séparation des familles |
 | `supabase/catalogue-depart.sql` | catalogue de départ des nouvelles familles, pour une base déjà créée |
