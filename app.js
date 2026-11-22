@@ -610,7 +610,7 @@
       : `<p class="hint">${t("Pas encore d'enfant. Ajoute le premier avec le formulaire ci-dessous.")}</p>`;
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#admin-rewards").innerHTML = S.rewards.length ? S.rewards.map(r => { const who = !r.child_ids || !r.child_ids.length ? t("Pour tous") : t("Pour {names}", { names: r.child_ids.map(id => (kidById(id) || {}).name).filter(Boolean).map(esc).join(", ") }), key = "delrw|" + r.id;
-      return `<div class="akid"><span class="avatar" aria-hidden="true" style="border-color:var(--gold)">${esc(r.icon)}</span><div class="grow"><b style="color:var(--ink)">${esc(shown(r.title))}</b><small>${t("{n} points · {who}", { n: r.cost, who })}</small></div><button class="btn ghost small" data-delrw="${r.id}">${t(S.confirmKey === key ? "Sûr ? Enlever" : "Enlever")}</button></div>`; }).join("")
+      return `<div class="akid"><span class="avatar" aria-hidden="true" style="border-color:var(--gold)">${esc(r.icon)}</span><div class="grow"><b style="color:var(--ink)">${esc(shown(r.title))}</b><small>${t("{n} points (≈ {eur}) · {who}", { n: r.cost, eur: euro(r.cost * settings().euroPerPoint), who })}</small></div><button class="btn ghost small" data-delrw="${r.id}">${t(S.confirmKey === key ? "Sûr ? Enlever" : "Enlever")}</button></div>`; }).join("")
       : `<p class="hint">${t("Aucune récompense pour l'instant.")}</p>`;
     const forSel = $("#rw-for"), cur = forSel.value;
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
@@ -708,14 +708,26 @@
     if (error) return msg("#missions-err", OOPS);
     S.family.settings = next; render(); toast(t("Missions enregistrées ✓"));
   });
+  // Le parent donne le prix en euros ; le site le change en points avec la valeur d'un point
+  // (budget de la semaine ÷ points possibles). Les points sont gardés : changer le budget ne change pas les récompenses déjà créées.
+  const rwPrice = () => Number(String($("#rw-price").value).replace(",", "."));
+  const pointsFor = eur => { const rate = settings().euroPerPoint; return rate > 0 && eur > 0 ? Math.max(1, Math.round(eur / rate)) : 0; };
+  function showRwPoints() {
+    const eur = rwPrice(), n = pointsFor(eur);
+    $("#rw-points").textContent = n ? t("Soit {n} points (1 point ≈ {value}).", { n, value: euro(settings().euroPerPoint) })
+      : t("Écris le prix en euros : le site calcule le nombre de points avec la valeur d'un point.");
+  }
+  $("#rw-price").addEventListener("input", showRwPoints);
   $("#reward-form").addEventListener("submit", async e => {
     e.preventDefault(); msg("#rw-err");
-    const title = $("#rw-title").value.trim(), cost = Math.round(Number($("#rw-cost").value)), forId = $("#rw-for").value;
+    const title = $("#rw-title").value.trim(), price = rwPrice(), cost = pointsFor(price), forId = $("#rw-for").value;
     if (!title) return msg("#rw-err", t("Écris le nom de la récompense."));
-    if (!(cost >= 1 && cost <= 9999)) return msg("#rw-err", t("Mets un nombre de points entre 1 et 9999."));
+    if (!(price > 0 && price <= 1000)) return msg("#rw-err", t("Mets un prix entre 0,01 et 1000 €."));
+    if (!cost) return msg("#rw-err", t("Ajoute d'abord des missions : le site en a besoin pour calculer la valeur d'un point."));
+    if (cost > 9999) return msg("#rw-err", t("Ce prix fait plus de 9999 points. Augmente le budget de la semaine ou baisse le prix."));
     const { error } = await sb.from("rewards").insert({ family_id: S.family.id, title: title.slice(0, 40), cost, icon: $("#rw-icon").value, child_ids: forId ? [forId] : null });
     if (error) return msg("#rw-err", OOPS);
-    $("#rw-title").value = ""; $("#rw-cost").value = "";
+    $("#rw-title").value = ""; $("#rw-price").value = ""; showRwPoints();
     await fetchRewards(); render(); toast(t("{title} est dans le catalogue ! 🎁", { title }));
   });
   $("#reset-btn").addEventListener("click", async () => {

@@ -225,10 +225,11 @@
           <h3>Ajouter une récompense</h3>
           <div class="grid4">
             <label>Nom<input id="rw-title" type="text" maxlength="40" placeholder="Ex. : Une glace" required></label>
-            <label>Points<input id="rw-cost" type="number" min="1" max="9999" required></label>
+            <label>Prix (€)<input id="rw-price" type="number" min="0.01" max="1000" step="0.01" inputmode="decimal" placeholder="Ex. : 2,50" required></label>
             <label>Pour qui ?<select id="rw-for"></select></label>
             <label>Image<select id="rw-icon"></select></label>
           </div>
+          <p class="hint" id="rw-points">Écris le prix en euros : le site calcule le nombre de points avec la valeur d'un point.</p>
           <p class="err" id="rw-err" hidden></p>
           <button class="btn" type="submit">➕ Ajouter au catalogue</button>
         </form>
