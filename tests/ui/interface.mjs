@@ -83,7 +83,7 @@ verifier(await p.evaluate(() => document.body.classList.contains("salon")), "le 
 await p.click("#salon-btn"); await attendre(200);
 verifier(await p.evaluate(() => !document.body.classList.contains("salon")), "le mode salon s'éteint");
 
-verifier(await p.isHidden("#don-card"), "sans lien Ko-fi dans config.js, pas de bouton de don");
+verifier(await p.isVisible("#don-card"), "le lien Ko-fi de config.js affiche le bouton « Soutenir le site »");
 
 // Bouton de don : on change le lien Ko-fi de config.js pour cette page seulement.
 async function pageDon(lien) {
@@ -105,6 +105,9 @@ verifier(await q.getAttribute("#don-link", "href") === "https://ko-fi.com/essai_
 verifier(await q.getAttribute("#don-link", "rel") === "noopener noreferrer" && await q.getAttribute("#don-link", "target") === "_blank", "la page Ko-fi s'ouvre à part, sans accès au site");
 await q.evaluate(() => (location.hash = "#points")); await q.waitForTimeout(250);
 verifier(await q.isHidden("#don-card"), "le bouton de don n'est pas sur la page des enfants");
+await q.close();
+q = await pageDon("");
+verifier(await q.isHidden("#don-card"), "sans lien Ko-fi dans config.js, pas de bouton de don");
 await q.close();
 for (const mauvais of ["javascript:alert(1)", "https://ko-fi.com.exemple.test/x", "http://ko-fi.com/x"]) {
   q = await pageDon(mauvais);

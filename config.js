@@ -6,5 +6,5 @@ window.POINTS_CONFIG = {
   supabaseAnonKey: "sb_publishable_5INytJfCe2-MGApUsR8QCQ_SnelYsZp",
   // Page de dons Ko-fi, par exemple "https://ko-fi.com/monpseudo".
   // Laisser "" pour cacher le bouton « Soutenir le site ».
-  kofi: ""
+  kofi: "https://ko-fi.com/mercibasile"
 };
