@@ -41,12 +41,16 @@ Chaque famille a ses propres données : la base refuse à une famille de lire ou
 - **📺 Mode salon** (dans ⚙️ Administration, carte « Mon compte et cet écran ») : pour une tablette posée dans le salon. L'écran reste allumé, et après 3 minutes sans toucher, la page revient sur « Mes points ». Le mode reste activé après un rechargement. Les points notés sur un autre appareil arrivent tout seuls, et la page des missions repart à zéro à minuit.
 - La tablette doit rester branchée. Si son navigateur ne sait pas garder l'écran allumé (vieux iPad), régler sa mise en veille sur « Jamais ».
 
-## Langues (français et anglais)
+## Langues (9 langues)
 
-Le site existe en français et en anglais. Par défaut, il prend la langue de l'appareil : français si le téléphone, la tablette ou l'ordinateur est réglé en français, anglais sinon.
-Les drapeaux 🇫🇷 et 🇬🇧 en haut de la page changent la langue ; le choix reste sur cet appareil.
+Le site existe en français, anglais, espagnol, italien, allemand, vietnamien, chinois (simplifié), japonais et arabe.
+Par défaut, il prend la langue de l'appareil (anglais si elle n'est pas dans la liste).
+Le menu des langues en haut de la page (drapeau + code, par ex. « 🇫🇷 FR ▾ ») change la langue ; le choix reste sur cet appareil.
+En arabe, toute la page (et la feuille à imprimer) se lit de droite à gauche.
 
-Les textes du site sont dans `i18n.js`. Ce que les familles écrivent (prénoms, missions, récompenses) n'est pas traduit, sauf les missions et le catalogue de départ proposés par le site, qui s'affichent dans la langue choisie.
+Les textes du site sont écrits en français ; chaque fichier `langues/<code>.js` donne leur traduction (clé = texte français).
+Ce que les familles écrivent (prénoms, missions, récompenses) n'est pas traduit, sauf les missions et le catalogue de départ proposés par le site, qui s'affichent dans la langue choisie.
+Pour ajouter un texte au site : l'écrire en français dans le code avec `t("…")`, puis ajouter sa traduction dans chaque fichier de `langues/` (les tests d'interface vérifient qu'aucune langue n'en oublie).
 
 ## Dons (Ko-fi)
 
@@ -80,7 +84,8 @@ Un bouton « 💛 Soutenir le site » apparaît alors dans l'onglet Administrati
 | `app.js` | la logique (connexion, familles, points, rapport) |
 | `manifest.webmanifest`, `icone-*.png` | installation sur l'écran d'accueil |
 | `characters.js` | le catalogue des personnages et leurs pouvoirs |
-| `i18n.js` | les langues : textes en anglais, choix de la langue, drapeaux |
+| `i18n.js` | choix de la langue, menu des langues, traduction de la page |
+| `langues/*.js` | les traductions (une langue par fichier) |
 | `config.js` | l'adresse et la clé publique Supabase, et le lien Ko-fi (facultatif) |
 | `supabase/schema.sql` | tables et règles de séparation des familles |
 | `supabase/catalogue-depart.sql` | catalogue de départ des nouvelles familles (copie des récompenses de la famille du super admin), pour une base déjà créée |

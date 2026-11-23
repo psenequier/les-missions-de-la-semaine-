@@ -2,7 +2,8 @@
 // connexion, famille, enfant, points, super admin, et aucune injection de code exécutée.
 // Lancement : node tests/ui/interface.mjs (depuis la racine du dépôt)
 import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
+import { runInNewContext } from "node:vm";
 import { extname, join, normalize } from "node:path";
 import { chromium } from "playwright";
 import { suivre, ecrire } from "./couverture.mjs";
@@ -25,6 +26,28 @@ const U = `http://127.0.0.1:${serveur.address().port}/index.html`;
 
 const echecs = [];
 const verifier = (ok, quoi) => { console.log(`${ok ? "OK" : "ÉCHEC"} : ${quoi}`); if (!ok) echecs.push(quoi); };
+
+// Traductions : chaque langue traduit tous les textes du site, avec les mêmes {valeurs}.
+{
+  const fenetre = {};
+  for (const f of (await readdir(join(racine, "langues"))).filter(x => x.endsWith(".js")))
+    runInNewContext(await readFile(join(racine, "langues", f), "utf8"), { window: fenetre });
+  const langues = fenetre.LANGUES, codes = Object.keys(langues);
+  verifier(["en", "es", "it", "de", "vi", "zh", "ja", "ar"].every(c => codes.includes(c)), "8 langues en plus du français : " + codes.join(", "));
+  // Textes passés à t("…") dans app.js et textes fixes de index.html.
+  const app = await readFile(join(racine, "app.js"), "utf8");
+  const dansApp = [...app.matchAll(/\bt\("((?:[^"\\]|\\.)*)"/g)].map(m => JSON.parse(`"${m[1]}"`));
+  const valeurs = s => (s.match(/\{\w+\}/g) || []).sort().join();
+  const ref = langues.en;
+  for (const c of codes) {
+    const L = langues[c], manque = [];
+    for (const k of Object.keys(ref.textes)) if (!(k in L.textes) || valeurs(L.textes[k]) !== valeurs(k)) manque.push(k);
+    for (const k of dansApp) if (!(k in L.textes)) manque.push(k);
+    for (const k of Object.keys(ref.defauts)) if (!(k in L.defauts)) manque.push(k);
+    for (const id of Object.keys(ref.personnages)) if (!(id in L.personnages) || L.personnages[id].words.length !== ref.personnages[id].words.length) manque.push(id);
+    verifier(manque.length === 0 && L.mois.length === 12 && L.jours.length === 7, `${c} : tous les textes sont traduits` + (manque.length ? " (manque : " + [...new Set(manque)].slice(0, 5).join(" | ") + ")" : ""));
+  }
+}
 
 const navigateur = await chromium.launch();
 // Appareil réglé en français : le site s'affiche en français (la version anglaise est testée plus bas).
@@ -251,7 +274,16 @@ for (const mauvais of ["javascript:alert(1)", "https://ko-fi.com.exemple.test/x"
 }
 
 // Langue : par défaut celle de l'appareil, puis les drapeaux, et le choix reste sur l'appareil.
-verifier(await p.evaluate(() => document.documentElement.lang) === "fr" && await p.getAttribute('[data-lang="fr"]', "aria-pressed") === "true", "appareil en français : site en français, drapeau 🇫🇷 choisi");
+verifier(await p.evaluate(() => document.documentElement.lang) === "fr" && await p.getAttribute('[data-lang="fr"]', "aria-checked") === "true" && (await p.textContent("#lang-cur")).trim() === "FR", "appareil en français : site en français, 🇫🇷 FR choisi dans le menu");
+verifier(await p.isHidden("#lang-menu") && await p.locator("#lang-menu [data-lang]").count() === 9, "le menu des langues est fermé et propose 9 langues");
+await p.click("#lang-btn");
+verifier(await p.isVisible("#lang-menu") && await p.getAttribute("#lang-btn", "aria-expanded") === "true" && await p.evaluate(() => document.activeElement.dataset.lang) === "fr", "le bouton ouvre le menu des langues, sur la langue choisie");
+await p.keyboard.press("ArrowDown");
+verifier(await p.evaluate(() => document.activeElement.dataset.lang) === "en", "les flèches du clavier passent d'une langue à l'autre");
+await p.keyboard.press("Escape");
+verifier(await p.isHidden("#lang-menu") && await p.evaluate(() => document.activeElement.id) === "lang-btn", "Échap ferme le menu");
+await p.click("#lang-btn"); await p.click("h1");
+verifier(await p.isHidden("#lang-menu"), "un clic ailleurs ferme le menu");
 const ctxEn = await navigateur.newContext({ viewport: { width: 1000, height: 1300 }, locale: "en-US" });
 const e = await ctxEn.newPage();
 const finE = await suivre(e);
@@ -287,8 +319,51 @@ const francais = await e.evaluate(() => {
   return restes;
 });
 verifier(francais.length === 0, "aucun texte resté en français" + (francais.length ? " : " + francais.join(" | ") : ""));
-await e.click('[data-lang="fr"]'); await e.waitForTimeout(600);
-verifier(await e.evaluate(() => document.documentElement.lang) === "fr" && (await e.textContent("#tab-admin")).includes("Administration"), "le drapeau 🇫🇷 remet le site en français");
+// Les 7 autres langues : tout est traduit sur chaque page, rien ne déborde sur un téléphone, l'arabe s'écrit de droite à gauche.
+const AUTRES = { es: "Mis puntos", it: "I miei punti", de: "Meine Punkte", vi: "Điểm của tôi", zh: "我的积分", ja: "わたしのポイント", ar: "نقاطي" };
+for (const [code, mesPoints] of Object.entries(AUTRES)) {
+  await e.click("#lang-btn"); await e.click(`#lang-menu [data-lang="${code}"]`); await e.waitForLoadState(); await e.waitForTimeout(600);
+  // Le faux Supabase repart de zéro au rechargement : on se reconnecte, on recrée la famille et un enfant.
+  await e.fill("#auth-email", "parent@exemple.test"); await e.fill("#auth-password", "motdepasse"); await e.click("#auth-submit"); await e.waitForTimeout(400);
+  await e.fill("#create-name", "The Smiths"); await e.click("#create-form button"); await e.waitForTimeout(600);
+  await e.evaluate(() => (location.hash = "#admin")); await e.waitForTimeout(250);
+  await e.fill("#kid-name", "Sam"); await e.click('[data-char="pirate"]'); await e.click("#kid-submit"); await e.waitForTimeout(300);
+  await e.evaluate(() => (location.hash = "#points")); await e.waitForTimeout(250);
+  await e.click('[data-earn$="|t:0"]'); await e.waitForTimeout(300);
+  const ok = await e.evaluate(() => ({ lang: document.documentElement.lang, dir: document.documentElement.dir }));
+  verifier(ok.lang.startsWith(code) && ok.dir === (code === "ar" ? "rtl" : "ltr"), `${code} : la page passe dans la langue choisie` + (code === "ar" ? ", de droite à gauche" : ""));
+  verifier((await e.textContent('.tab[data-view="points"]')).includes(mesPoints) && (["es", "it", "de"].includes(code) || (await e.textContent('.tab[data-view="admin"] .ts')).trim() !== "Admin"), `${code} : les onglets sont traduits (${mesPoints})`);
+  verifier(!/\bpoints?\b/.test(await e.textContent("#rules")), `${code} : les règles du jour disent « points » dans la langue choisie`);
+  const restes = [];
+  for (const h of ["#points", "#catalogue", "#semaines", "#admin"]) {
+    await e.evaluate(x => (location.hash = x), h); await e.waitForTimeout(250);
+    restes.push(...await e.evaluate(() => {
+      const r = [], mots = /\b(Ajouter|Enregistrer|enfants?|semaine|Annuler|récompense|famille|Gagner|aujourd'hui|Supprimer|Modifier|Pas encore|Mon compte|Se connecter|Rien|points? gagnés|Missions? du)\b/i;
+      const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      for (let n = w.nextNode(); n; n = w.nextNode()) { const s = n.nodeValue.trim(); if (s && mots.test(s) && !/Smiths/.test(s) && !n.parentElement.closest("#lang-menu")) r.push(s); }
+      document.querySelectorAll("[placeholder],[aria-label]").forEach(el => ["placeholder", "aria-label"].forEach(a => { const v = el.getAttribute(a); if (v && mots.test(v)) r.push(v); }));
+      return r;
+    }));
+  }
+  verifier(restes.length === 0, `${code} : aucun texte resté en français` + (restes.length ? " : " + [...new Set(restes)].join(" | ") : ""));
+  await e.setViewportSize({ width: 375, height: 800 });
+  for (const h of ["#points", "#catalogue", "#semaines", "#admin"]) {
+    await e.evaluate(x => (location.hash = x), h); await e.waitForTimeout(200);
+    const deborde = await e.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    verifier(deborde <= 1, `${code} ${h} : rien ne déborde sur un téléphone` + (deborde > 1 ? ` (${deborde} px de trop)` : ""));
+  }
+  await e.setViewportSize({ width: 1000, height: 1300 });
+}
+// La feuille à imprimer en arabe : de droite à gauche, la grille garde ses 7 jours.
+await e.evaluate(() => { window.print = () => {}; location.hash = "#admin"; }); await e.waitForTimeout(250);
+await e.click("#print-btn"); await e.waitForTimeout(200);
+verifier((await e.textContent("#print-sheets .sheet h1")).includes("مهام") && await e.locator("#print-sheets .sheet").first().locator("thead .ps-day").count() === 7, "ar : la feuille à imprimer est en arabe, avec ses 7 jours");
+await e.emulateMedia({ media: "print" });
+verifier(await e.evaluate(() => getComputedStyle(document.querySelector("#print-sheets .ps-grid")).direction) === "rtl", "ar : la feuille à imprimer se lit de droite à gauche");
+await e.emulateMedia({ media: "screen" });
+await e.evaluate(() => window.dispatchEvent(new Event("afterprint")));
+await e.click("#lang-btn"); await e.click('#lang-menu [data-lang="fr"]'); await e.waitForLoadState(); await e.waitForTimeout(600);
+verifier(await e.evaluate(() => document.documentElement.lang) === "fr" && await e.evaluate(() => document.documentElement.dir) === "ltr" && (await e.textContent("#tab-admin")).includes("Administration"), "le menu remet le site en français, de gauche à droite");
 await e.reload(); await e.waitForTimeout(600);
 verifier(await e.evaluate(() => document.documentElement.lang) === "fr" && await e.evaluate(() => localStorage.getItem("points-lang")) === "fr", "le choix de la langue reste sur l'appareil, même si l'appareil est en anglais");
 await finE(); await ctxEn.close();

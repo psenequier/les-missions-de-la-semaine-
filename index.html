@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- [html-validate-disable-next require-sri -- la feuille Google Fonts change selon le navigateur : pas d'empreinte possible] -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@500;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=2026-11-23d">
+<link rel="stylesheet" href="style.css?v=2026-11-23e">
 </head>
 <body>
 <div class="wrap">
@@ -28,9 +28,19 @@
     </div>
     <div class="head-side">
     <a class="don-pill" id="don-pill" href="#points" target="_blank" rel="noopener noreferrer" hidden>💛 Soutenir Basile</a>
-    <div class="lang" role="group" aria-label="Langue">
-      <button type="button" class="flag" data-lang="fr" lang="fr" aria-label="Français" title="Français"><svg viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#002654"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#ce1126"/></svg></button>
-      <button type="button" class="flag" data-lang="en" lang="en" aria-label="English" title="English"><svg viewBox="0 0 60 40" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><clipPath id="uk-x"><path d="M30,20h30v20zv20h-30zh-30v-20zv-20h30z"/></clipPath><rect width="60" height="40" fill="#012169"/><path d="M0,0L60,40M60,0L0,40" stroke="#fff" stroke-width="8"/><path d="M0,0L60,40M60,0L0,40" clip-path="url(#uk-x)" stroke="#c8102e" stroke-width="5"/><path d="M30,0v40M0,20h60" stroke="#fff" stroke-width="12"/><path d="M30,0v40M0,20h60" stroke="#c8102e" stroke-width="7"/></svg></button>
+    <div class="lang">
+      <button type="button" class="lang-btn" id="lang-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="lang-menu" aria-label="Langue" title="Langue"><span class="lang-cur" id="lang-cur"></span><span class="lang-caret" aria-hidden="true">▾</span></button>
+      <ul class="lang-menu" id="lang-menu" role="menu" aria-label="Langue" hidden>
+        <li role="none"><button type="button" role="menuitemradio" aria-checked="false" data-lang="fr" lang="fr"><svg viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#002654"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#ce1126"/></svg><span>Français</span></button></li>
+        <li role="none"><button type="button" role="menuitemradio" aria-checked="false" data-lang="en" lang="en"><svg viewBox="0 0 60 40" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><clipPath id="uk-x"><path d="M30,20h30v20zv20h-30zh-30v-20zv-20h30z"/></clipPath><rect width="60" height="40" fill="#012169"/><path d="M0,0L60,40M60,0L0,40" stroke="#fff" stroke-width="8"/><path d="M0,0L60,40M60,0L0,40" clip-path="url(#uk-x)" stroke="#c8102e" stroke-width="5"/><path d="M30,0v40M0,20h60" stroke="#fff" stroke-width="12"/><path d="M30,0v40M0,20h60" stroke="#c8102e" stroke-width="7"/></svg><span>English</span></button></li>
+        <li role="none"><button type="button" role="menuitemradio" aria-checked="false" data-lang="es" lang="es"><svg viewBox="0 0 3 2" aria-hidden="true"><rect width="3" height="2" fill="#aa151b"/><rect y=".5" width="3" height="1" fill="#f1bf00"/></svg><span>Español</span></button></li>
+        <li role="none"><button type="button" role="menuitemradio" aria-checked="false" data-lang="it" lang="it"><svg viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#ce2b37"/></svg><span>Italiano</span></button></li>
+        <li role="none"><button type="button" role="menuitemradio" aria-checked="false" data-lang="de" lang="de"><svg viewBox="0 0 5 3" preserveAspectRatio="none" aria-hidden="true"><rect width="5" height="1" fill="#000"/><rect y="1" width="5" height="1" fill="#dd0000"/><rect y="2" width="5" height="1" fill="#ffce00"/></svg><span>Deutsch</span></button></li>
+        <li role="none"><button type="button" role="menuitemradio" aria-checked="false" data-lang="vi" lang="vi"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" fill="#da251d"/><polygon fill="#ff0" points="15,4 16.35,8.15 20.71,8.15 17.18,10.71 18.53,14.85 15,12.29 11.47,14.85 12.82,10.71 9.29,8.15 13.65,8.15"/></svg><span>Tiếng Việt</span></button></li>
+        <li role="none"><button type="button" role="menuitemradio" aria-checked="false" data-lang="zh" lang="zh-Hans"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" fill="#ee1c25"/><g fill="#ffde00"><polygon points="5,2 5.67,4.07 7.85,4.07 6.09,5.35 6.76,7.43 5,6.15 3.24,7.43 3.91,5.35 2.15,4.07 4.33,4.07"/><polygon points="9.14,2.51 9.62,1.97 9.25,1.34 9.91,1.63 10.39,1.08 10.33,1.8 11,2.09 10.29,2.25 10.22,2.97 9.85,2.35"/><polygon points="11.01,4.14 11.66,3.82 11.56,3.1 12.07,3.62 12.72,3.3 12.38,3.95 12.88,4.47 12.17,4.34 11.83,4.99 11.73,4.27"/><polygon points="11.04,6.73 11.76,6.7 11.96,6 12.21,6.68 12.94,6.66 12.37,7.1 12.62,7.79 12.01,7.38 11.44,7.83 11.64,7.13"/><polygon points="9.22,8.38 9.9,8.63 10.35,8.06 10.32,8.79 11,9.05 10.3,9.24 10.26,9.96 9.87,9.36 9.16,9.55 9.62,8.98"/></g></svg><span>中文</span></button></li>
+        <li role="none"><button type="button" role="menuitemradio" aria-checked="false" data-lang="ja" lang="ja"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" fill="#fff"/><circle cx="15" cy="10" r="6" fill="#bc002d"/></svg><span>日本語</span></button></li>
+        <li role="none"><button type="button" role="menuitemradio" aria-checked="false" data-lang="ar" lang="ar" dir="rtl"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" fill="#007a3d"/><text x="15" y="15.5" font-size="14" font-weight="700" text-anchor="middle" fill="#fff">ع</text></svg><span>العربية</span></button></li>
+      </ul>
     </div>
     <div class="who" id="who" hidden>
       <select id="family-switch" aria-label="Changer de famille" hidden></select>
@@ -326,9 +336,17 @@
 <div class="print-sheets" id="print-sheets"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
-<script src="i18n.js?v=2026-11-23d"></script>
-<script src="config.js?v=2026-11-23d"></script>
-<script src="characters.js?v=2026-11-23d"></script>
-<script src="app.js?v=2026-11-23d"></script>
+<script src="langues/en.js?v=2026-11-23e"></script>
+<script src="langues/es.js?v=2026-11-23e"></script>
+<script src="langues/it.js?v=2026-11-23e"></script>
+<script src="langues/de.js?v=2026-11-23e"></script>
+<script src="langues/vi.js?v=2026-11-23e"></script>
+<script src="langues/zh.js?v=2026-11-23e"></script>
+<script src="langues/ja.js?v=2026-11-23e"></script>
+<script src="langues/ar.js?v=2026-11-23e"></script>
+<script src="i18n.js?v=2026-11-23e"></script>
+<script src="config.js?v=2026-11-23e"></script>
+<script src="characters.js?v=2026-11-23e"></script>
+<script src="app.js?v=2026-11-23e"></script>
 </body>
 </html>
