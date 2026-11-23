@@ -625,7 +625,7 @@
     }).join("") : guideShown() ? "" : emptyKids();
     show("#rules", S.children.length > 0);
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
-    $("#rules").innerHTML = `<b>${t("Les règles, une fois par jour :")}</b> ${rules.map(b => `${esc(shown(b.label).toLowerCase())} = <b>${b.points} point${b.points > 1 ? "s" : ""}</b>`).join(" · ")}`;
+    $("#rules").innerHTML = `<b>${t("Les règles, une fois par jour :")}</b> ${rules.map(b => `${esc(shown(b.label).toLowerCase())} = <b>${b.points > 1 ? t("{n} points", { n: b.points }) : t("1 point")}</b>`).join(" · ")}`;
   }
 
   function renderShop() {
@@ -787,7 +787,7 @@
     const st = settings(), days = DAYN.map(d => `<th class="ps-day">${esc(d)}</th>`).join("");
     const boxes = `<td class="ps-box"></td>`.repeat(7);
     const section = (icon, title, note) => `<tr class="ps-sec"><th colspan="9"><span aria-hidden="true">${esc(icon)}</span> ${esc(title)}${note ? ` <small>${note}</small>` : ""}</th></tr>`;
-    const row = (label, pts) => `<tr><td class="ps-lbl">${esc(label)}</td><td class="ps-pts">${pts}</td>${boxes}</tr>`;
+    const row = (label, pts) => `<tr><td class="ps-lbl">${esc(label)}</td><td class="ps-pts"><span class="ps-n">${pts}</span></td>${boxes}</tr>`;
     const routine = part => {
       const r = st.routines[part], items = (r.items || []).filter(Boolean);
       if (!items.length) return "";

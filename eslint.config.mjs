@@ -11,7 +11,7 @@ export default [
   security.configs.recommended,
   nounsanitized.configs.recommended,
   {
-    files: ["*.js"],
+    files: ["*.js", "langues/*.js"],
     
     languageOptions: {
       ecmaVersion: 2022,
@@ -31,6 +31,6 @@ export default [
     files: ["eslint.config.mjs", "scripts/**/*.mjs", "tests/**/*.mjs"],
     languageOptions: { sourceType: "module", globals: { ...globals.node, ...globals.browser } },
     // Outils lancés par la CI sur le dépôt lui-même : lire des chemins calculés est voulu.
-    rules: { "security/detect-non-literal-fs-filename": "off" }
+    rules: { "security/detect-non-literal-fs-filename": "off", "security/detect-object-injection": "off" }
   }
 ];
