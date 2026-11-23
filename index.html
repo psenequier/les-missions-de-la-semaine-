@@ -107,7 +107,6 @@
   <div id="app" class="app" hidden>
     <nav class="tabs" aria-label="Pages">
       <a href="#points" class="tab" data-view="points"><span class="ti" aria-hidden="true">⭐</span><span class="tl">Mes points</span><span class="ts">Points</span></a>
-      <a href="#a-faire" class="tab" data-view="todo"><span class="ti" aria-hidden="true">✅</span><span class="tl">À LA RECHERCHE DES POINTS</span><span class="ts">Missions</span></a>
       <a href="#catalogue" class="tab" data-view="shop"><span class="ti" aria-hidden="true">🎁</span><span class="tl">Catalogue</span><span class="ts">Catalogue</span></a>
       <a href="#semaines" class="tab" data-view="weeks"><span class="ti" aria-hidden="true">📅</span><span class="tl">Mes semaines</span><span class="ts">Semaines</span></a>
       <a href="#admin" class="tab" data-view="admin" id="tab-admin" hidden><span class="ti" aria-hidden="true">⚙️</span><span class="tl">Administration</span><span class="ts">Admin</span></a>
@@ -154,7 +153,7 @@
             <span class="step-n" aria-hidden="true">4</span>
             <div class="step-body">
               <h3>Montre le site à ton enfant</h3>
-              <p class="hint">Chaque jour, il coche ses missions dans « À LA RECHERCHE DES POINTS ». Ses points montent, et il les échange contre une récompense dans le Catalogue.</p>
+              <p class="hint">Chaque jour, il coche ses missions dans « Mes points ». Ses points montent, et il les échange contre une récompense dans le Catalogue.</p>
               <p class="hint">Astuce : ajoute le site à l'écran d'accueil de la tablette ou du téléphone, comme une application.</p>
               <button type="button" class="btn ghost small" data-guide="try">C'est compris</button>
             </div>
@@ -162,13 +161,12 @@
         </ol>
         <p class="ok" id="guide-done" hidden>Bravo, tout est prêt ! 🎉</p>
       </div>
+      <div class="points-bar">
+        <p class="today" id="today"></p>
+        <div class="kid-filter" id="kid-filter" role="group" aria-label="Choisir l'enfant" hidden></div>
+      </div>
       <div class="kids" id="kids"></div>
       <div class="rules" id="rules"></div>
-    </section>
-
-    <section class="view" data-view="todo" hidden>
-      <p class="today" id="today"></p>
-      <div class="kids" id="todo-kids"></div>
     </section>
 
     <section class="view shop" data-view="shop" hidden>

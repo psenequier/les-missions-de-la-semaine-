@@ -91,8 +91,15 @@ h3{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:v
 .rules b{color:var(--ink)}
 .empty{background:var(--card);border:2px dashed var(--line);border-radius:20px;padding:24px;text-align:center;color:var(--soft);font-weight:700}
 
-/* À faire */
+/* Mes points : date du jour et filtre par enfant */
+.points-bar{display:flex;justify-content:space-between;align-items:center;gap:10px 16px;flex-wrap:wrap}
 .today{margin:0;font-weight:800;color:var(--soft)}
+.kid-filter{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--card);color:var(--ink);border:3px solid var(--line);border-radius:99px;padding:6px 14px;font-weight:800;min-height:44px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.chip[aria-pressed="true"]{border-color:var(--gold);background:var(--gold);color:#2b2340}
+.kids.solo{grid-template-columns:minmax(0,640px);justify-content:center}
+
+/* Missions à cocher */
 .block{display:grid;gap:8px}
 .block-h{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 .block-h b{font-family:var(--display);font-size:22px}
