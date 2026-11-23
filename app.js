@@ -301,8 +301,10 @@
     const { data, error } = await sb.rpc("create_family", { fname: name.slice(0, 60) });
     if (error) return msg("#create-err", t("La famille n'a pas pu être créée. Réessaie."));
     toast(t("Famille créée ! Ajoute maintenant les enfants."));
+    store.set(guideKey(data), "montre"); // nouvelle famille : le guide de démarrage s'affiche
     await loadFamilies(data);
-    location.hash = "#admin";
+    location.hash = "#points"; showView();
+    focusAddKid();
   });
   $("#join-form").addEventListener("submit", async e => {
     e.preventDefault(); msg("#join-err");
@@ -429,12 +431,77 @@
     if (!S.family) return;
     if (S.checksDay && S.checksDay !== dayKey()) reload("checks");
     show("#tab-admin", isAdmin()); showTopLogout();
-    renderPoints(); renderTodo(); renderShop(); renderWeeks();
+    renderGuide(); renderPoints(); renderTodo(); renderShop(); renderWeeks();
     if (isAdmin()) renderAdminLists();
   }
   function emptyKids() {
-    return `<div class="empty">${t("Aucun enfant pour l'instant.")}${isAdmin() ? t(" Ajoute-les dans {link}.", { link: `<a href="#admin">${t("⚙️ Administration")}</a>` }) : t(" Un parent administrateur peut les ajouter.")}</div>`;
+    if (!isAdmin()) return `<div class="empty">${t("Aucun enfant pour l'instant.")}${t(" Un parent administrateur peut les ajouter.")}</div>`;
+    return `<div class="empty"><p>${t("Aucun enfant pour l'instant. Commence par ajouter ton enfant : c'est lui qui gagnera les points.")}</p>
+      <a class="btn" href="#points" data-add-kid>${t("➕ Ajouter un enfant")}</a></div>`;
   }
+
+  // ───────── Guide de démarrage ─────────
+  // Pour l'administrateur d'une famille qui commence : 4 étapes sur « Mes points ».
+  // Choix gardé sur l'appareil, par famille : « montre » (forcé), « masque » (fermé), sinon automatique :
+  // le guide s'affiche tant que la famille n'a pas d'enfant ou pas encore de points.
+  const guideKey = fid => "points-guide-" + fid;
+  const stepKey = (fid, step) => "points-guide-" + fid + "-" + step;
+  function guideShown() {
+    if (!S.family || !isAdmin() || S.visiting) return false;
+    const v = store.get(guideKey(S.family.id));
+    if (v === "masque") return false;
+    return v === "montre" || !S.children.length || !S.events.length;
+  }
+  function renderGuide() {
+    const on = guideShown(); show("#guide", on);
+    if (!on) return;
+    const fid = S.family.id, hasKid = S.children.length > 0;
+    const done = { kid: hasKid, missions: !!store.get(stepKey(fid, "missions")), rewards: !!store.get(stepKey(fid, "rewards")), try: !!store.get(stepKey(fid, "try")) };
+    Object.keys(done).forEach(k => {
+      const li = $("#step-" + k); li.classList.toggle("done", done[k]);
+      li.querySelector(".step-n").textContent = done[k] ? "✓" : String(Object.keys(done).indexOf(k) + 1);
+    });
+    show("#guide-kid-form", !hasKid);
+    msg("#guide-kid-ok", hasKid ? t("{names} : c'est fait ! Tu peux ajouter d'autres enfants dans Administration.", { names: S.children.map(k => k.name).join(", ") }) : "");
+    show("#guide-done", Object.values(done).every(Boolean));
+  }
+  // Va au bon endroit pour ajouter un enfant : le guide s'il est affiché, sinon la carte « Les enfants ».
+  function focusAddKid() {
+    const viaGuide = guideShown();
+    location.hash = viaGuide ? "#points" : "#admin"; showView();
+    const input = $(viaGuide ? "#guide-kid-name" : "#kid-name");
+    input.closest(".card").scrollIntoView({ block: "start" });
+    input.focus({ preventScroll: true });
+  }
+  async function addKid(name, character) {
+    const row = { name: name.slice(0, 30), character, family_id: S.family.id, position: S.children.length };
+    const { error } = await sb.from("children").insert(row);
+    if (!error) toast(t("{name} est dans la famille ! 🎉", { name }));
+    return !error;
+  }
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-add-kid]"); if (!b) return;
+    e.preventDefault(); focusAddKid();
+  });
+  $("#guide-kid-form").addEventListener("submit", async e => {
+    e.preventDefault(); msg("#guide-kid-err");
+    const name = $("#guide-kid-name").value.trim();
+    if (!name) return msg("#guide-kid-err", t("Écris le prénom de l'enfant."));
+    const char = window.CHARACTERS[S.children.length % window.CHARACTERS.length].id;
+    if (!await addKid(name, char)) return msg("#guide-kid-err", OOPS);
+    $("#guide-kid-name").value = "";
+    await fetchChildren(); render();
+  });
+  $("#guide").addEventListener("click", e => {
+    const b = e.target.closest("[data-guide]"); if (!b) return;
+    const step = b.dataset.guide; store.set(stepKey(S.family.id, step), "1");
+    if (step === "try") return renderGuide();
+    e.preventDefault();
+    location.hash = "#admin"; showView(); renderGuide();
+    $(step === "missions" ? "#missions-card" : "#rewards-card").scrollIntoView({ block: "start" });
+  });
+  $("#guide-hide").addEventListener("click", () => { store.set(guideKey(S.family.id), "masque"); renderGuide(); toast(t("Guide masqué. Tu peux le revoir dans Administration.")); });
+  $("#guide-show").addEventListener("click", () => { store.set(guideKey(S.family.id), "montre"); location.hash = "#points"; showView(); renderGuide(); $("#guide").scrollIntoView({ block: "start" }); });
   function kidHead(kid, right) {
     const c = charOf(kid);
     return `<div class="top"><div class="ident"><span class="avatar" aria-hidden="true">${c.icon}</span><h2 class="name">${esc(kid.name)}</h2></div>${right}</div>`;
@@ -465,7 +532,8 @@
         <div><h3>${t("Derniers points")}</h3>${hist.length ? `<ul class="history" data-style="margin-top:8px">${hist.map(e => `<li><span>${esc(shown(e.label))} <span class="when">${shortDate(e.at)}</span></span><span class="${e.points > 0 ? "plus" : "minus"}">${e.points > 0 ? "+" : ""}${e.points}</span></li>`).join("")}</ul>` : `<p class="hint" data-style="margin-top:8px">${t("Pas encore de points. Appuie sur un bouton au-dessus !")}</p>`}</div>
         <button class="btn-undo" data-undo="${k.id}" ${hist.length && !locked ? "" : "disabled"}>${locked ? t("🔒 Semaine terminée, plus rien à annuler") : t("↩︎ Annuler le dernier")}</button>
       </article>`;
-    }).join("") : emptyKids();
+    }).join("") : guideShown() ? "" : emptyKids();
+    show("#rules", S.children.length > 0);
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#rules").innerHTML = `<b>${t("Les règles, une fois par jour :")}</b> ${buttons.map(b => `${esc(shown(b.label).toLowerCase())} = <b>${b.pts} point${b.pts > 1 ? "s" : ""}</b>`).join(" · ")}`;
   }
@@ -495,7 +563,7 @@
 
   function renderShop() {
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
-    $("#shop-wallets").innerHTML = S.children.map(k => `<div class="wallet" data-style="${kidStyle(k)}"><span class="wi" aria-hidden="true">${charOf(k).icon}</span><span>${esc(k.name)}</span><b>${total(k.id)}</b></div>`).join("");
+    $("#shop-wallets").innerHTML = S.children.map(k => `<div class="wallet" data-style="${kidStyle(k)}"><span class="wi" aria-hidden="true">${charOf(k).icon}</span><span>${esc(k.name)}</span><b>${total(k.id)}</b></div>`).join("") || emptyKids();
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#shop-items").innerHTML = S.rewards.length ? byCost().map(r => {
       const kids = S.children.filter(k => !r.child_ids || !r.child_ids.length || r.child_ids.includes(k.id));
@@ -684,12 +752,11 @@
     e.preventDefault(); msg("#kid-err");
     const name = $("#kid-name").value.trim();
     if (!name) return msg("#kid-err", t("Écris le prénom de l'enfant."));
-    const row = { name: name.slice(0, 30), character: S.pickedChar };
-    const { error } = S.editingKid
-      ? await sb.from("children").update(row).eq("id", S.editingKid)
-      : await sb.from("children").insert(Object.assign(row, { family_id: S.family.id, position: S.children.length }));
-    if (error) return msg("#kid-err", OOPS);
-    toast(S.editingKid ? t("Fiche modifiée ✓") : t("{name} est dans la famille ! 🎉", { name }));
+    if (S.editingKid) {
+      const { error } = await sb.from("children").update({ name: name.slice(0, 30), character: S.pickedChar }).eq("id", S.editingKid);
+      if (error) return msg("#kid-err", OOPS);
+      toast(t("Fiche modifiée ✓"));
+    } else if (!await addKid(name, S.pickedChar)) return msg("#kid-err", OOPS);
     await fetchChildren(); resetKidForm(); render();
   });
   $("#fam-form").addEventListener("submit", async e => {

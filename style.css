@@ -275,3 +275,18 @@ body.salon #salon-btn{border-color:var(--gold);background:var(--gold);color:#2b2
 .flag svg{width:30px;height:20px;border-radius:4px;display:block}
 .flag[aria-pressed="true"]{opacity:1;border-color:var(--gold)}
 .flag:hover,.flag:focus-visible{opacity:1}
+
+/* Guide de démarrage (nouvelle famille) */
+.guide{border-color:var(--gold);margin-bottom:16px}
+.guide-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px 16px;flex-wrap:wrap}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.step{display:grid;grid-template-columns:40px 1fr;gap:12px;align-items:start;padding:12px;border:2px solid var(--line);border-radius:18px}
+.step h3{margin:0 0 4px;font-size:18px}
+.step-body{display:grid;gap:8px;justify-items:start;min-width:0}
+.step-body .form{width:100%;max-width:420px}
+.step-n{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--gold);color:#2b2340;font-family:var(--display);font-weight:800;font-size:20px}
+.step.done{opacity:.8}
+.step.done .step-body > .hint,.step.done .step-body > .btn{display:none}
+.step.done .step-n{background:var(--ok);color:#fff}
+.empty p{margin:0 0 12px}
+@media (max-width:480px){.step{grid-template-columns:32px 1fr;padding:10px}.step-n{width:32px;height:32px;font-size:16px}}
