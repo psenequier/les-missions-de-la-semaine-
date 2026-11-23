@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- [html-validate-disable-next require-sri -- la feuille Google Fonts change selon le navigateur : pas d'empreinte possible] -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@500;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=2026-11-23c">
+<link rel="stylesheet" href="style.css?v=2026-11-23d">
 </head>
 <body>
 <div class="wrap">
@@ -173,7 +173,10 @@
         <p class="ok" id="guide-done" hidden>Bravo, tout est prêt ! 🎉</p>
       </div>
       <div class="points-bar">
-        <p class="today" id="today"></p>
+        <div class="today-row">
+          <p class="today" id="today"></p>
+          <button type="button" class="btn ghost small" id="print-btn-points" hidden>🖨️ Imprimer les missions</button>
+        </div>
         <div class="kid-filter" id="kid-filter" role="group" aria-label="Choisir l'enfant" hidden></div>
       </div>
       <div class="kids" id="kids"></div>
@@ -199,6 +202,13 @@
     </section>
 
     <section class="view admin" data-view="admin" hidden>
+      <div class="card print-card" id="print-row" hidden>
+        <div class="print-text">
+          <h2 class="sec">🖨️ Les missions sur papier</h2>
+          <p class="hint">Une page A4 par enfant, avec ses missions à cocher pour toute la semaine. À afficher dans sa chambre : plus besoin d'écran pour savoir quoi faire !</p>
+        </div>
+        <button type="button" class="btn big" id="print-btn">🖨️ Imprimer les missions</button>
+      </div>
       <div class="card">
         <h2 class="sec">Mon compte et cet écran</h2>
         <p class="hint">Connecté avec <b id="who-email"></b></p>
@@ -219,10 +229,6 @@
       <div class="card" id="kids-card">
         <h2 class="sec">Les enfants</h2>
         <div id="admin-kids" class="admin-kids"></div>
-        <div class="print-row" id="print-row" hidden>
-          <button type="button" class="btn ghost" id="print-btn">🖨️ Imprimer les missions</button>
-          <p class="hint">Une page A4 par enfant, avec ses missions à cocher pour toute la semaine. À afficher dans sa chambre : plus besoin d'écran pour savoir quoi faire !</p>
-        </div>
         <form id="kid-form" class="form" novalidate>
           <h3 id="kid-form-title">Ajouter un enfant</h3>
           <label>Prénom<input id="kid-name" type="text" maxlength="30" required></label>
@@ -320,9 +326,9 @@
 <div class="print-sheets" id="print-sheets"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
-<script src="i18n.js?v=2026-11-23c"></script>
-<script src="config.js?v=2026-11-23c"></script>
-<script src="characters.js?v=2026-11-23c"></script>
-<script src="app.js?v=2026-11-23c"></script>
+<script src="i18n.js?v=2026-11-23d"></script>
+<script src="config.js?v=2026-11-23d"></script>
+<script src="characters.js?v=2026-11-23d"></script>
+<script src="app.js?v=2026-11-23d"></script>
 </body>
 </html>
