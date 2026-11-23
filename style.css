@@ -94,6 +94,7 @@ h3{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:v
 /* Mes points : date du jour et filtre par enfant */
 .points-bar{display:flex;justify-content:space-between;align-items:center;gap:10px 16px;flex-wrap:wrap;margin-bottom:20px}
 .today{margin:0;font-weight:800;color:var(--soft)}
+.today-row{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap}
 .kid-filter{display:flex;gap:8px;flex-wrap:wrap}
 .chip{display:inline-flex;align-items:center;gap:6px;background:var(--card);color:var(--ink);border:3px solid var(--line);border-radius:99px;padding:6px 14px;font-weight:800;min-height:44px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .chip[aria-pressed="true"]{border-color:var(--gold);background:var(--gold);color:#2b2340}
@@ -306,8 +307,12 @@ body.salon #salon-btn{border-color:var(--gold);background:var(--gold);color:#2b2
 @media (max-width:480px){.step{grid-template-columns:32px 1fr;padding:10px}.step-n{width:32px;height:32px;font-size:16px}}
 
 /* ───────── Imprimer les missions : une page A4 par enfant ───────── */
-.print-row{display:grid;gap:4px;justify-items:start;margin:12px 0 4px}
-.print-row .hint{margin:0}
+.print-card{display:flex;align-items:center;justify-content:space-between;gap:12px 20px;flex-wrap:wrap;border-color:var(--gold);
+  background:color-mix(in srgb,var(--gold) 12%,var(--card))}
+.print-card .print-text{flex:1 1 280px}
+.print-card .hint{margin:4px 0 0}
+.btn.big{font-size:18px;padding:14px 24px}
+@media (max-width:560px){.print-card .btn.big{width:100%}}
 .print-sheets{display:none}
 @media print{
   @page{size:A4 portrait;margin:10mm}

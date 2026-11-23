@@ -601,6 +601,7 @@
     const st = settings();
     try { $("#today").textContent = t("Aujourd'hui : {date}", { date: new Date().toLocaleDateString(L.locale, { weekday: "long", day: "numeric", month: "long" }) }); } catch { /* sans effet */ }
     show("#today", S.children.length > 0);
+    show("#print-btn-points", isAdmin() && S.children.length > 0);
     renderFilter();
     const tasks = st.tasks.map((x, i) => ({ key: "t:" + i, icon: x.icon, label: x.label, pts: x.points }));
     const rules = [...["matin", "soir"].map(p => st.routines[p]), ...st.tasks];
@@ -809,14 +810,17 @@
       </article>`;
     }).join("");
   }
-  $("#print-btn").addEventListener("click", () => {
+  const printMissions = () => {
     if (!S.children.length) return;
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#print-sheets").innerHTML = printSheets();
     applyStyles($("#print-sheets")); // couleurs de chaque enfant posées tout de suite, avant l'impression
     document.body.classList.add("printing");
     window.print();
-  });
+  };
+  // Le bouton est en haut de l'administration, et aussi sur « Mes points » pour les parents administrateurs.
+  $("#print-btn").addEventListener("click", printMissions);
+  $("#print-btn-points").addEventListener("click", printMissions);
   window.addEventListener("afterprint", () => document.body.classList.remove("printing"));
   function fillAdminForms() {
     const st = settings();

@@ -143,6 +143,7 @@ verifier(await p.locator("#kid-goal").count() === 0 && !(await p.textContent("#r
 verifier(await p.evaluate(() => !!document.querySelector("#don-card").previousElementSibling.querySelector("#who-email")), "« Soutenir le site » vient juste après « Mon compte » dans l'administration");
 await p.evaluate(() => { window.__imprime = 0; window.print = () => { window.__imprime++; }; });
 verifier(await p.isVisible("#print-btn"), "avec des enfants, le bouton « Imprimer les missions » est dans l'administration");
+verifier(await p.evaluate(() => document.querySelector('.view[data-view="admin"]').firstElementChild.id === "print-row"), "« Imprimer les missions » est tout en haut de l'administration");
 await p.click("#print-btn"); await attendre(200);
 verifier(await p.evaluate(() => window.__imprime) === 1, "le bouton ouvre l'impression");
 verifier(await p.locator("#print-sheets .sheet").count() === 2, "une feuille par enfant");
@@ -157,6 +158,11 @@ verifier(await p.isVisible("#print-sheets .sheet") && await p.isHidden(".wrap"),
 await p.emulateMedia({ media: "screen" });
 await p.evaluate(() => window.dispatchEvent(new Event("afterprint")));
 verifier(await p.evaluate(() => !document.body.classList.contains("printing")), "après l'impression, la page redevient normale");
+await vue("#points");
+verifier(await p.isVisible("#print-btn-points"), "un parent administrateur peut aussi imprimer depuis « Mes points »");
+await p.click("#print-btn-points"); await attendre(200);
+verifier(await p.evaluate(() => window.__imprime) === 2, "le bouton de « Mes points » ouvre aussi l'impression");
+await p.evaluate(() => window.dispatchEvent(new Event("afterprint")));
 await vue("#points");
 
 verifier(await p.isHidden("#super-btn") && await p.isHidden("#logout") && await p.isHidden("#logout-top"), "en haut, plus de boutons super admin, salon ni déconnexion pour un administrateur");

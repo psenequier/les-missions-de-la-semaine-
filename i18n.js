@@ -305,7 +305,8 @@
     "{n} points quand tout est fait": "{n} points when everything is done",
     "Coche la case du jour quand c'est fait. Chaque mission compte une fois par jour.": "Tick the day's box when it's done. Each mission counts once a day.",
     "Mes points de la semaine :": "My points this week:",
-    "Ce que je peux m'offrir": "What I can treat myself to"
+    "Ce que je peux m'offrir": "What I can treat myself to",
+    "🖨️ Les missions sur papier": "🖨️ Missions on paper"
   };
 
   // Missions et récompenses de départ proposées par le site : enregistrées en français dans la base
