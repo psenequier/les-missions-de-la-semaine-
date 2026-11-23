@@ -92,7 +92,7 @@ h3{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:v
 .empty{background:var(--card);border:2px dashed var(--line);border-radius:20px;padding:24px;text-align:center;color:var(--soft);font-weight:700}
 
 /* Mes points : date du jour et filtre par enfant */
-.points-bar{display:flex;justify-content:space-between;align-items:center;gap:10px 16px;flex-wrap:wrap}
+.points-bar{display:flex;justify-content:space-between;align-items:center;gap:10px 16px;flex-wrap:wrap;margin-bottom:20px}
 .today{margin:0;font-weight:800;color:var(--soft)}
 .kid-filter{display:flex;gap:8px;flex-wrap:wrap}
 .chip{display:inline-flex;align-items:center;gap:6px;background:var(--card);color:var(--ink);border:3px solid var(--line);border-radius:99px;padding:6px 14px;font-weight:800;min-height:44px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
