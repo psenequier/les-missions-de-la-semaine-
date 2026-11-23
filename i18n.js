@@ -295,7 +295,17 @@
     "{n} adultes dans la famille": "{n} adults in the family",
     ", dont 1 administrateur.": ", including 1 admin.",
     ", dont {n} administrateurs.": ", including {n} admins.",
-    ", dont 0 administrateur.": ", including 0 admins."
+    ", dont 0 administrateur.": ", including 0 admins.",
+    "🖨️ Imprimer les missions": "🖨️ Print the missions",
+    "Une page A4 par enfant, avec ses missions à cocher pour toute la semaine. À afficher dans sa chambre : plus besoin d'écran pour savoir quoi faire !": "One A4 page per child, with their missions to tick off for the whole week. Pin it up in their bedroom: no screen needed to know what to do!",
+    "Les missions de {name}": "{name}'s missions",
+    "Semaine du ........ au ........": "Week from ........ to ........",
+    "Mission": "Mission",
+    "Points": "Points",
+    "{n} points quand tout est fait": "{n} points when everything is done",
+    "Coche la case du jour quand c'est fait. Chaque mission compte une fois par jour.": "Tick the day's box when it's done. Each mission counts once a day.",
+    "Mes points de la semaine :": "My points this week:",
+    "Ce que je peux m'offrir": "What I can treat myself to"
   };
 
   // Missions et récompenses de départ proposées par le site : enregistrées en français dans la base
