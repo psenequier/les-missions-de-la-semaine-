@@ -301,8 +301,10 @@
     const { data, error } = await sb.rpc("create_family", { fname: name.slice(0, 60) });
     if (error) return msg("#create-err", t("La famille n'a pas pu être créée. Réessaie."));
     toast(t("Famille créée ! Ajoute maintenant les enfants."));
+    store.set(guideKey(data), "montre"); // nouvelle famille : le guide de démarrage s'affiche
     await loadFamilies(data);
-    location.hash = "#admin";
+    location.hash = "#points"; showView();
+    focusAddKid();
   });
   $("#join-form").addEventListener("submit", async e => {
     e.preventDefault(); msg("#join-err");
@@ -410,13 +412,13 @@
     if (S.busy) return; S.busy = true;
     const key = childId + "|" + item, on = S.checks.has(key), day = dayKey();
     // affichage immédiat, puis enregistrement
-    on ? S.checks.delete(key) : S.checks.add(key); renderTodo();
+    on ? S.checks.delete(key) : S.checks.add(key); renderPoints();
     const q = on
       ? sb.from("checks").delete().eq("child_id", childId).eq("day", day).eq("item", item)
       : sb.from("checks").insert({ family_id: S.family.id, child_id: childId, day, item });
     const { error } = await q;
     S.busy = false;
-    if (error) { toast(OOPS); await fetchChecks(); renderTodo(); }
+    if (error) { toast(OOPS); await fetchChecks(); renderPoints(); }
   }
   function armConfirm(key) {
     S.confirmKey = key; clearTimeout(S.confirmTimer);
@@ -429,12 +431,77 @@
     if (!S.family) return;
     if (S.checksDay && S.checksDay !== dayKey()) reload("checks");
     show("#tab-admin", isAdmin()); showTopLogout();
-    renderPoints(); renderTodo(); renderShop(); renderWeeks();
+    renderGuide(); renderPoints(); renderShop(); renderWeeks();
     if (isAdmin()) renderAdminLists();
   }
   function emptyKids() {
-    return `<div class="empty">${t("Aucun enfant pour l'instant.")}${isAdmin() ? t(" Ajoute-les dans {link}.", { link: `<a href="#admin">${t("⚙️ Administration")}</a>` }) : t(" Un parent administrateur peut les ajouter.")}</div>`;
+    if (!isAdmin()) return `<div class="empty">${t("Aucun enfant pour l'instant.")}${t(" Un parent administrateur peut les ajouter.")}</div>`;
+    return `<div class="empty"><p>${t("Aucun enfant pour l'instant. Commence par ajouter ton enfant : c'est lui qui gagnera les points.")}</p>
+      <a class="btn" href="#points" data-add-kid>${t("➕ Ajouter un enfant")}</a></div>`;
   }
+
+  // ───────── Guide de démarrage ─────────
+  // Pour l'administrateur d'une famille qui commence : 4 étapes sur « Mes points ».
+  // Choix gardé sur l'appareil, par famille : « montre » (forcé), « masque » (fermé), sinon automatique :
+  // le guide s'affiche tant que la famille n'a pas d'enfant ou pas encore de points.
+  const guideKey = fid => "points-guide-" + fid;
+  const stepKey = (fid, step) => "points-guide-" + fid + "-" + step;
+  function guideShown() {
+    if (!S.family || !isAdmin() || S.visiting) return false;
+    const v = store.get(guideKey(S.family.id));
+    if (v === "masque") return false;
+    return v === "montre" || !S.children.length || !S.events.length;
+  }
+  function renderGuide() {
+    const on = guideShown(); show("#guide", on);
+    if (!on) return;
+    const fid = S.family.id, hasKid = S.children.length > 0;
+    const done = { kid: hasKid, missions: !!store.get(stepKey(fid, "missions")), rewards: !!store.get(stepKey(fid, "rewards")), try: !!store.get(stepKey(fid, "try")) };
+    Object.keys(done).forEach(k => {
+      const li = $("#step-" + k); li.classList.toggle("done", done[k]);
+      li.querySelector(".step-n").textContent = done[k] ? "✓" : String(Object.keys(done).indexOf(k) + 1);
+    });
+    show("#guide-kid-form", !hasKid);
+    msg("#guide-kid-ok", hasKid ? t("{names} : c'est fait ! Tu peux ajouter d'autres enfants dans Administration.", { names: S.children.map(k => k.name).join(", ") }) : "");
+    show("#guide-done", Object.values(done).every(Boolean));
+  }
+  // Va au bon endroit pour ajouter un enfant : le guide s'il est affiché, sinon la carte « Les enfants ».
+  function focusAddKid() {
+    const viaGuide = guideShown();
+    location.hash = viaGuide ? "#points" : "#admin"; showView();
+    const input = $(viaGuide ? "#guide-kid-name" : "#kid-name");
+    input.closest(".card").scrollIntoView({ block: "start" });
+    input.focus({ preventScroll: true });
+  }
+  async function addKid(name, character) {
+    const row = { name: name.slice(0, 30), character, family_id: S.family.id, position: S.children.length };
+    const { error } = await sb.from("children").insert(row);
+    if (!error) toast(t("{name} est dans la famille ! 🎉", { name }));
+    return !error;
+  }
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-add-kid]"); if (!b) return;
+    e.preventDefault(); focusAddKid();
+  });
+  $("#guide-kid-form").addEventListener("submit", async e => {
+    e.preventDefault(); msg("#guide-kid-err");
+    const name = $("#guide-kid-name").value.trim();
+    if (!name) return msg("#guide-kid-err", t("Écris le prénom de l'enfant."));
+    const char = window.CHARACTERS[S.children.length % window.CHARACTERS.length].id;
+    if (!await addKid(name, char)) return msg("#guide-kid-err", OOPS);
+    $("#guide-kid-name").value = "";
+    await fetchChildren(); render();
+  });
+  $("#guide").addEventListener("click", e => {
+    const b = e.target.closest("[data-guide]"); if (!b) return;
+    const step = b.dataset.guide; store.set(stepKey(S.family.id, step), "1");
+    if (step === "try") return renderGuide();
+    e.preventDefault();
+    location.hash = "#admin"; showView(); renderGuide();
+    $(step === "missions" ? "#missions-card" : "#rewards-card").scrollIntoView({ block: "start" });
+  });
+  $("#guide-hide").addEventListener("click", () => { store.set(guideKey(S.family.id), "masque"); renderGuide(); toast(t("Guide masqué. Tu peux le revoir dans Administration.")); });
+  $("#guide-show").addEventListener("click", () => { store.set(guideKey(S.family.id), "montre"); location.hash = "#points"; showView(); renderGuide(); $("#guide").scrollIntoView({ block: "start" }); });
   function kidHead(kid, right) {
     const c = charOf(kid);
     return `<div class="top"><div class="ident"><span class="avatar" aria-hidden="true">${c.icon}</span><h2 class="name">${esc(kid.name)}</h2></div>${right}</div>`;
@@ -444,58 +511,74 @@
   // (la base le vérifie aussi, voir le déclencheur une_fois_par_jour dans schema.sql).
   const doneToday = (kidId, label) => { const day = dayKey(); return S.events.some(e => e.child_id === kidId && e.label === label && e.points > 0 && dayKey(e.at) === day); };
 
+  // ───────── Mes points : missions à cocher, points et filtre par enfant ─────────
+  // Le filtre (« Tous » ou un enfant) est gardé sur l'appareil, par famille.
+  const filterKey = fid => "points-filtre-" + fid;
+  function kidFilter() {
+    const id = S.family && store.get(filterKey(S.family.id));
+    return id && kidById(id) ? id : "";
+  }
+  function renderFilter() {
+    const sel = kidFilter(), many = S.children.length > 1;
+    show("#kid-filter", many);
+    if (!many) return;
+    const chip = (id, icon, label) => `<button type="button" class="chip" data-filter="${id}" aria-pressed="${sel === id}"><span aria-hidden="true">${icon}</span>${label}</button>`;
+    // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc() ou catalogue du site
+    $("#kid-filter").innerHTML = chip("", "👨‍👩‍👧‍👦", esc(t("Tous"))) + S.children.map(k => chip(k.id, charOf(k).icon, esc(k.name))).join("");
+  }
+  function routineBlock(k, part, st) {
+    const r = st.routines[part], items = (r.items || []).filter(Boolean);
+    const keyOf = i => part + ":" + i + ":" + items[i];
+    const done = items.filter((_, i) => S.checks.has(k.id + "|" + keyOf(i))).length;
+    const all = items.length > 0 && done === items.length;
+    const given = doneToday(k.id, r.label);
+    let bottom;
+    if (given) {
+      const ck = "unbonus|" + k.id + "|" + part, conf = S.confirmKey === ck;
+      bottom = `<p class="given">${t(part === "matin" ? "+{n} points gagnés ce matin ! 🎉" : "+{n} points gagnés ce soir ! 🎉", { n: r.points })}</p>`
+        + `<button class="btn-undo ${conf ? "confirm" : ""}" data-unbonus="${k.id}|${part}">${conf ? t("Sûr ? Touche encore pour annuler") : t("↩︎ Annuler ces {n} points", { n: r.points })}</button>`;
+    } else {
+      bottom = `<button class="btn-bonus" data-bonus="${k.id}|${part}" ${all ? "" : "disabled"}>${all ? t("Tout est fait ! Prendre mes {n} points", { n: r.points }) : t("Encore {n} à faire", { n: items.length - done })}</button>`;
+    }
+    return `<div class="block"><div class="block-h"><b>${esc(r.icon)} ${esc(shown(r.label))}</b><span class="p">${t("{n} points · {done} / {all} cases", { n: r.points, done, all: items.length })}</span></div>
+      ${items.map((lbl, i) => { const on = S.checks.has(k.id + "|" + keyOf(i));
+        return `<button class="check ${on ? "done" : ""}" data-check="${k.id}" data-item="${esc(keyOf(i))}" aria-pressed="${on}"><span class="box">${on ? "✓" : ""}</span><span class="lbl">${esc(shown(lbl))}</span></button>`; }).join("")}
+      ${bottom}
+    </div>`;
+  }
   function renderPoints() {
     const st = settings();
-    const buttons = [
-      ...["matin", "soir"].map(p => ({ key: "r:" + p, icon: st.routines[p].icon, label: st.routines[p].label, pts: st.routines[p].points })),
-      ...st.tasks.map((t, i) => ({ key: "t:" + i, icon: t.icon, label: t.label, pts: t.points }))
-    ];
+    try { $("#today").textContent = t("Aujourd'hui : {date}", { date: new Date().toLocaleDateString(L.locale, { weekday: "long", day: "numeric", month: "long" }) }); } catch { /* sans effet */ }
+    show("#today", S.children.length > 0);
+    renderFilter();
+    const tasks = st.tasks.map((x, i) => ({ key: "t:" + i, icon: x.icon, label: x.label, pts: x.points }));
+    const rules = [...["matin", "soir"].map(p => st.routines[p]), ...st.tasks];
+    const sel = kidFilter(), kids = sel ? S.children.filter(k => k.id === sel) : S.children;
+    $("#kids").classList.toggle("solo", !!sel);
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
-    $("#kids").innerHTML = S.children.length ? S.children.map(k => {
+    $("#kids").innerHTML = kids.length ? kids.map(k => {
       const hist = S.events.filter(e => e.child_id === k.id).sort((a, b) => b.at - a.at).slice(0, 5), locked = hist.length && weekClosed(hist[0].at);
       return `<article class="kid" data-style="${kidStyle(k)}">
         ${kidHead(k, `<div class="total"><b>${total(k.id)}</b><span>${t("points")}</span></div>`)}
-        <div><h3>${t("Gagner des points")}</h3><div class="earn" data-style="margin-top:8px">
-          ${buttons.map(b => {
-            const fait = doneToday(k.id, b.label), routine = b.key.startsWith("r:");
-            const bas = fait ? t("✓ fait aujourd'hui") : routine ? t("Cocher mes missions →") : "+" + b.pts;
-            return `<button class="btn-earn ${fait ? "fait" : ""} ${routine && !fait ? "aller" : ""}" data-earn="${k.id}|${b.key}" ${fait ? "disabled" : ""}><span class="ico" aria-hidden="true">${esc(b.icon)}</span>${esc(shown(b.label))}<span class="pts">${bas}</span></button>`;
+        ${["matin", "soir"].map(part => routineBlock(k, part, st)).join("")}
+        ${tasks.length ? `<div><h3>${t("Autres missions")}</h3><div class="earn" data-style="margin-top:8px">
+          ${tasks.map(b => {
+            const fait = doneToday(k.id, b.label);
+            return `<button class="btn-earn ${fait ? "fait" : ""}" data-earn="${k.id}|${b.key}" ${fait ? "disabled" : ""}><span class="ico" aria-hidden="true">${esc(b.icon)}</span>${esc(shown(b.label))}<span class="pts">${fait ? t("✓ fait aujourd'hui") : "+" + b.pts}</span></button>`;
           }).join("")}
-        </div></div>
-        <div><h3>${t("Derniers points")}</h3>${hist.length ? `<ul class="history" data-style="margin-top:8px">${hist.map(e => `<li><span>${esc(shown(e.label))} <span class="when">${shortDate(e.at)}</span></span><span class="${e.points > 0 ? "plus" : "minus"}">${e.points > 0 ? "+" : ""}${e.points}</span></li>`).join("")}</ul>` : `<p class="hint" data-style="margin-top:8px">${t("Pas encore de points. Appuie sur un bouton au-dessus !")}</p>`}</div>
+        </div></div>` : ""}
+        <div><h3>${t("Derniers points")}</h3>${hist.length ? `<ul class="history" data-style="margin-top:8px">${hist.map(e => `<li><span>${esc(shown(e.label))} <span class="when">${shortDate(e.at)}</span></span><span class="${e.points > 0 ? "plus" : "minus"}">${e.points > 0 ? "+" : ""}${e.points}</span></li>`).join("")}</ul>` : `<p class="hint" data-style="margin-top:8px">${t("Pas encore de points. Coche tes missions au-dessus !")}</p>`}</div>
         <button class="btn-undo" data-undo="${k.id}" ${hist.length && !locked ? "" : "disabled"}>${locked ? t("🔒 Semaine terminée, plus rien à annuler") : t("↩︎ Annuler le dernier")}</button>
       </article>`;
-    }).join("") : emptyKids();
+    }).join("") : guideShown() ? "" : emptyKids();
+    show("#rules", S.children.length > 0);
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
-    $("#rules").innerHTML = `<b>${t("Les règles, une fois par jour :")}</b> ${buttons.map(b => `${esc(shown(b.label).toLowerCase())} = <b>${b.pts} point${b.pts > 1 ? "s" : ""}</b>`).join(" · ")}`;
-  }
-
-  function renderTodo() {
-    const st = settings();
-    try { $("#today").textContent = t("Aujourd'hui : {date}", { date: new Date().toLocaleDateString(L.locale, { weekday: "long", day: "numeric", month: "long" }) }); } catch { /* sans effet */ }
-    // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
-    $("#todo-kids").innerHTML = S.children.length ? S.children.map(k => `<article class="kid" data-style="${kidStyle(k)}">
-      ${kidHead(k, "")}
-      ${["matin", "soir"].map(part => {
-        const r = st.routines[part], items = (r.items || []).filter(Boolean);
-        const keyOf = i => part + ":" + i + ":" + items[i];
-        const done = items.filter((_, i) => S.checks.has(k.id + "|" + keyOf(i))).length;
-        const all = items.length > 0 && done === items.length;
-        const given = doneToday(k.id, r.label);
-        return `<div class="block"><div class="block-h"><b>${esc(r.icon)} ${esc(shown(r.label))}</b><span class="p">${t("{n} points · {done} / {all} cases", { n: r.points, done, all: items.length })}</span></div>
-          ${items.map((lbl, i) => { const on = S.checks.has(k.id + "|" + keyOf(i));
-            return `<button class="check ${on ? "done" : ""}" data-check="${k.id}" data-item="${esc(keyOf(i))}" aria-pressed="${on}"><span class="box">${on ? "✓" : ""}</span><span class="lbl">${esc(shown(lbl))}</span></button>`; }).join("")}
-          ${given ? `<p class="given">${t(part === "matin" ? "+{n} points gagnés ce matin ! 🎉" : "+{n} points gagnés ce soir ! 🎉", { n: r.points })}</p>${(() => { const ck = "unbonus|" + k.id + "|" + part, conf = S.confirmKey === ck;
-              return `<button class="btn-undo ${conf ? "confirm" : ""}" data-unbonus="${k.id}|${part}">${conf ? t("Sûr ? Touche encore pour annuler") : t("↩︎ Annuler ces {n} points", { n: r.points })}</button>`; })()}`
-            : `<button class="btn-bonus" data-bonus="${k.id}|${part}" ${all ? "" : "disabled"}>${all ? t("Tout est fait ! Prendre mes {n} points", { n: r.points }) : t("Encore {n} à faire", { n: items.length - done })}</button>`}
-        </div>`;
-      }).join("")}
-    </article>`).join("") : emptyKids();
+    $("#rules").innerHTML = `<b>${t("Les règles, une fois par jour :")}</b> ${rules.map(b => `${esc(shown(b.label).toLowerCase())} = <b>${b.points} point${b.points > 1 ? "s" : ""}</b>`).join(" · ")}`;
   }
 
   function renderShop() {
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
-    $("#shop-wallets").innerHTML = S.children.map(k => `<div class="wallet" data-style="${kidStyle(k)}"><span class="wi" aria-hidden="true">${charOf(k).icon}</span><span>${esc(k.name)}</span><b>${total(k.id)}</b></div>`).join("");
+    $("#shop-wallets").innerHTML = S.children.map(k => `<div class="wallet" data-style="${kidStyle(k)}"><span class="wi" aria-hidden="true">${charOf(k).icon}</span><span>${esc(k.name)}</span><b>${total(k.id)}</b></div>`).join("") || emptyKids();
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#shop-items").innerHTML = S.rewards.length ? byCost().map(r => {
       const kids = S.children.filter(k => !r.child_ids || !r.child_ids.length || r.child_ids.includes(k.id));
@@ -684,12 +767,11 @@
     e.preventDefault(); msg("#kid-err");
     const name = $("#kid-name").value.trim();
     if (!name) return msg("#kid-err", t("Écris le prénom de l'enfant."));
-    const row = { name: name.slice(0, 30), character: S.pickedChar };
-    const { error } = S.editingKid
-      ? await sb.from("children").update(row).eq("id", S.editingKid)
-      : await sb.from("children").insert(Object.assign(row, { family_id: S.family.id, position: S.children.length }));
-    if (error) return msg("#kid-err", OOPS);
-    toast(S.editingKid ? t("Fiche modifiée ✓") : t("{name} est dans la famille ! 🎉", { name }));
+    if (S.editingKid) {
+      const { error } = await sb.from("children").update({ name: name.slice(0, 30), character: S.pickedChar }).eq("id", S.editingKid);
+      if (error) return msg("#kid-err", OOPS);
+      toast(t("Fiche modifiée ✓"));
+    } else if (!await addKid(name, S.pickedChar)) return msg("#kid-err", OOPS);
     await fetchChildren(); resetKidForm(); render();
   });
   $("#fam-form").addEventListener("submit", async e => {
@@ -798,11 +880,8 @@
     const b = e.target.closest("button"); if (!b || b.disabled || !S.family) return;
     const d = b.dataset;
     if (d.earn) {
-      const [kid, key] = d.earn.split("|"), st = settings(); let item;
-      if (key.startsWith("r:")) item = st.routines[key.slice(2)]; else item = st.tasks[Number(key.slice(2))];
+      const [kid, key] = d.earn.split("|"), item = settings().tasks[Number(key.slice(2))];
       if (!item) return;
-      // Les missions du matin et du soir se gagnent en cochant les cases, sur la page des missions
-      if (key.startsWith("r:")) { location.hash = "#a-faire"; return; }
       if (doneToday(kid, item.label)) return toast(t("Déjà fait aujourd'hui ✓ Reviens demain !"));
       if (await addEvent(kid, item.points, item.label)) toast(t("Bravo {name} ! +{n} points", { name: (kidById(kid) || {}).name, n: item.points }));
     } else if (d.undo) {
@@ -831,6 +910,8 @@
       const r = S.rewards.find(x => x.id === rid);
       if (!r || total(kid) < costOf(r)) return render();
       if (await addEvent(kid, -costOf(r), r.title)) toast(t("Super ! {title} pour {name} 🎁", { title: shown(r.title), name: (kidById(kid) || {}).name }));
+    } else if ("filter" in d) {
+      store.set(filterKey(S.family.id), d.filter); renderPoints();
     } else if (d.year) {
       S.yearShown += Number(d.year); renderWeeks();
     } else if (d.editkid) {
@@ -858,8 +939,10 @@
   });
 
   // ───────── Onglets ─────────
-  const VIEWS = { "#a-faire": "todo", "#catalogue": "shop", "#semaines": "weeks", "#admin": "admin" };
+  // « #a-faire » (ancienne page des missions, fusionnée dans « Mes points ») mène à « Mes points ».
+  const VIEWS = { "#catalogue": "shop", "#semaines": "weeks", "#admin": "admin" };
   function showView() {
+    if (location.hash === "#a-faire") history.replaceState(null, "", "#points");
     let v = VIEWS[location.hash] || "points";
     if (v === "admin" && !isAdmin()) v = "points";
     $$(".view").forEach(el => (el.hidden = el.dataset.view !== v));

@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- [html-validate-disable-next require-sri -- la feuille Google Fonts change selon le navigateur : pas d'empreinte possible] -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@500;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=2026-11-22g">
+<link rel="stylesheet" href="style.css?v=2026-11-23a">
 </head>
 <body>
 <div class="wrap">
@@ -107,20 +107,66 @@
   <div id="app" class="app" hidden>
     <nav class="tabs" aria-label="Pages">
       <a href="#points" class="tab" data-view="points"><span class="ti" aria-hidden="true">⭐</span><span class="tl">Mes points</span><span class="ts">Points</span></a>
-      <a href="#a-faire" class="tab" data-view="todo"><span class="ti" aria-hidden="true">✅</span><span class="tl">À LA RECHERCHE DES POINTS</span><span class="ts">Missions</span></a>
       <a href="#catalogue" class="tab" data-view="shop"><span class="ti" aria-hidden="true">🎁</span><span class="tl">Catalogue</span><span class="ts">Catalogue</span></a>
       <a href="#semaines" class="tab" data-view="weeks"><span class="ti" aria-hidden="true">📅</span><span class="tl">Mes semaines</span><span class="ts">Semaines</span></a>
       <a href="#admin" class="tab" data-view="admin" id="tab-admin" hidden><span class="ti" aria-hidden="true">⚙️</span><span class="tl">Administration</span><span class="ts">Admin</span></a>
     </nav>
 
     <section class="view" data-view="points">
+      <!-- Guide de démarrage : pour l'administrateur d'une nouvelle famille -->
+      <div class="card guide" id="guide" hidden>
+        <div class="guide-head">
+          <h2 class="sec">👋 Bienvenue ! On démarre en 4 étapes</h2>
+          <button type="button" class="link" id="guide-hide">Masquer le guide</button>
+        </div>
+        <ol class="steps">
+          <li class="step" id="step-kid">
+            <span class="step-n" aria-hidden="true">1</span>
+            <div class="step-body">
+              <h3>Ajoute ton premier enfant</h3>
+              <p class="hint">C'est lui qui gagnera les points. Tu pourras changer son personnage et ajouter ses frères et sœurs dans Administration.</p>
+              <form id="guide-kid-form" class="form inline" novalidate>
+                <label>Prénom<input id="guide-kid-name" type="text" maxlength="30" autocomplete="off" required></label>
+                <button class="btn" type="submit">Ajouter</button>
+              </form>
+              <p class="err" id="guide-kid-err" hidden></p>
+              <p class="ok" id="guide-kid-ok" hidden></p>
+            </div>
+          </li>
+          <li class="step" id="step-missions">
+            <span class="step-n" aria-hidden="true">2</span>
+            <div class="step-body">
+              <h3>Regarde les missions</h3>
+              <p class="hint">Elles sont déjà prêtes : le matin, le soir, la chambre et les devoirs. Tu peux les changer quand tu veux.</p>
+              <a class="btn ghost small" href="#admin" data-guide="missions">Voir les missions</a>
+            </div>
+          </li>
+          <li class="step" id="step-rewards">
+            <span class="step-n" aria-hidden="true">3</span>
+            <div class="step-body">
+              <h3>Choisis les récompenses</h3>
+              <p class="hint">Le catalogue a déjà 3 idées. Ajoute ce qui fait plaisir à tes enfants, avec le prix en euros : le site calcule les points.</p>
+              <a class="btn ghost small" href="#admin" data-guide="rewards">Voir les récompenses</a>
+            </div>
+          </li>
+          <li class="step" id="step-try">
+            <span class="step-n" aria-hidden="true">4</span>
+            <div class="step-body">
+              <h3>Montre le site à ton enfant</h3>
+              <p class="hint">Chaque jour, il coche ses missions dans « Mes points ». Ses points montent, et il les échange contre une récompense dans le Catalogue.</p>
+              <p class="hint">Astuce : ajoute le site à l'écran d'accueil de la tablette ou du téléphone, comme une application.</p>
+              <button type="button" class="btn ghost small" data-guide="try">C'est compris</button>
+            </div>
+          </li>
+        </ol>
+        <p class="ok" id="guide-done" hidden>Bravo, tout est prêt ! 🎉</p>
+      </div>
+      <div class="points-bar">
+        <p class="today" id="today"></p>
+        <div class="kid-filter" id="kid-filter" role="group" aria-label="Choisir l'enfant" hidden></div>
+      </div>
       <div class="kids" id="kids"></div>
       <div class="rules" id="rules"></div>
-    </section>
-
-    <section class="view" data-view="todo" hidden>
-      <p class="today" id="today"></p>
-      <div class="kids" id="todo-kids"></div>
     </section>
 
     <section class="view shop" data-view="shop" hidden>
@@ -147,11 +193,24 @@
         <p class="hint">Connecté avec <b id="who-email"></b></p>
         <div class="account-row">
           <button type="button" class="btn ghost" id="salon-btn" aria-pressed="false">📺 Mode salon</button>
+          <button type="button" class="btn ghost" id="guide-show">👋 Guide de démarrage</button>
           <button type="button" class="btn ghost" id="super-btn" hidden>🛡️ Super admin</button>
           <button type="button" class="btn ghost" id="logout">Se déconnecter</button>
         </div>
         <p class="hint">Le mode salon garde l'écran allumé, pour une tablette posée dans le salon. Il revient tout seul sur « Mes points » après 3 minutes sans toucher l'écran.</p>
       </div>
+      <div class="card" id="kids-card">
+        <h2 class="sec">Les enfants</h2>
+        <div id="admin-kids" class="admin-kids"></div>
+        <form id="kid-form" class="form" novalidate>
+          <h3 id="kid-form-title">Ajouter un enfant</h3>
+          <label>Prénom<input id="kid-name" type="text" maxlength="30" required></label>
+          <fieldset class="chars"><legend>Personnage</legend><div id="char-picker" class="char-picker"></div></fieldset>
+          <p class="err" id="kid-err" hidden></p>
+          <div class="row"><button class="btn" type="submit" id="kid-submit">Ajouter l'enfant</button><button class="btn ghost" type="button" id="kid-cancel" hidden>Annuler</button></div>
+        </form>
+      </div>
+
       <div class="card don" id="don-card" hidden>
         <h2 class="sec">💛 Soutenir le site</h2>
         <p class="hint">Le site est gratuit et sans publicité. Si tu veux aider à le faire vivre, tu peux faire un petit don. Ce n'est pas obligatoire.</p>
@@ -182,19 +241,7 @@
         <p class="hint" id="members"></p>
       </div>
 
-      <div class="card">
-        <h2 class="sec">Les enfants</h2>
-        <div id="admin-kids" class="admin-kids"></div>
-        <form id="kid-form" class="form" novalidate>
-          <h3 id="kid-form-title">Ajouter un enfant</h3>
-          <label>Prénom<input id="kid-name" type="text" maxlength="30" required></label>
-          <fieldset class="chars"><legend>Personnage</legend><div id="char-picker" class="char-picker"></div></fieldset>
-          <p class="err" id="kid-err" hidden></p>
-          <div class="row"><button class="btn" type="submit" id="kid-submit">Ajouter l'enfant</button><button class="btn ghost" type="button" id="kid-cancel" hidden>Annuler</button></div>
-        </form>
-      </div>
-
-      <div class="card">
+      <div class="card" id="missions-card">
         <h2 class="sec">Les missions</h2>
         <p class="hint">Tu ne choisis pas les points : donne à chaque mission un poids de 1 à 10 (plus il est grand, plus la mission rapporte). Le site répartit environ 100 points par semaine et par enfant selon ces poids, puis calcule la valeur d'un point avec le budget de la semaine (voir le rapport plus haut).</p>
         <form id="missions-form" class="form" novalidate>
@@ -218,7 +265,7 @@
         </form>
       </div>
 
-      <div class="card">
+      <div class="card" id="rewards-card">
         <h2 class="sec">Les récompenses</h2>
         <div id="admin-rewards" class="admin-rewards"></div>
         <form id="reward-form" class="form" novalidate>
@@ -256,9 +303,9 @@
 <div class="toast" id="toast" hidden></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
-<script src="i18n.js?v=2026-11-22g"></script>
-<script src="config.js?v=2026-11-22g"></script>
-<script src="characters.js?v=2026-11-22g"></script>
-<script src="app.js?v=2026-11-22g"></script>
+<script src="i18n.js?v=2026-11-23a"></script>
+<script src="config.js?v=2026-11-23a"></script>
+<script src="characters.js?v=2026-11-23a"></script>
+<script src="app.js?v=2026-11-23a"></script>
 </body>
 </html>
