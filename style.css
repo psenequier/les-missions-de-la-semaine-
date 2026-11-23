@@ -240,6 +240,13 @@ h3{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:v
 .visit{margin:0 0 12px;padding:10px 14px;border-radius:12px;background:color-mix(in srgb,var(--gold) 22%,var(--card));font-weight:700}
 #super .report td:first-child{font-weight:800}
 
+/* Statistiques du site (super admin) */
+.stats-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0 18px}
+.stat-tile{border:2px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--card)}
+.stat-tile b{display:block;font-family:var(--display);font-size:32px;line-height:1.1}
+.stat-tile span{font-size:14px;color:var(--soft)}
+#stats .report{min-width:0}
+
 /* ───────── Téléphone et tablette ───────── */
 .tab{display:inline-flex;align-items:center;gap:6px}
 .tab .ts{display:none}

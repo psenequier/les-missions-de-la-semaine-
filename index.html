@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://oypwntftajpjyzgcafnp.supabase.co wss://oypwntftajpjyzgcafnp.supabase.co; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://mercibasile.goatcounter.com; connect-src 'self' https://oypwntftajpjyzgcafnp.supabase.co wss://oypwntftajpjyzgcafnp.supabase.co; object-src 'none'; base-uri 'none'; form-action 'self'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#fff8ef">
@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- [html-validate-disable-next require-sri -- la feuille Google Fonts change selon le navigateur : pas d'empreinte possible] -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@500;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=2026-11-23a">
+<link rel="stylesheet" href="style.css?v=2026-11-23b">
 </head>
 <body>
 <div class="wrap">
@@ -99,6 +99,17 @@
     <p class="err" id="super-err" hidden></p>
     <div class="report-wrap"><table class="report" id="super-list"><thead><tr><th>Famille</th></tr></thead></table></div>
     <div class="row"><button type="button" class="btn ghost" id="super-close">↩︎ Retour</button></div>
+  </section>
+
+  <!-- Statistiques du site : réservées au super admin, chiffres d'ensemble seulement -->
+  <section class="card" id="stats" hidden>
+    <h2 class="sec">📊 Statistiques du site</h2>
+    <p class="hint">Des chiffres pour tout le site, sans rien montrer des familles elles-mêmes. Seul le super admin voit cette page.</p>
+    <p class="err" id="stats-err" hidden></p>
+    <div class="stats-tiles" id="stats-tiles"></div>
+    <h3>Nouvelles inscriptions, 30 derniers jours</h3>
+    <div class="report-wrap"><table class="report" id="stats-days"><thead><tr><th>Jour</th></tr></thead></table></div>
+    <div class="row"><button type="button" class="btn ghost" id="stats-close">↩︎ Retour</button></div>
   </section>
 
   <p class="visit" id="visit" hidden><span id="visit-text"></span> <button type="button" class="link" id="visit-leave">Revenir à ma famille</button></p>
@@ -195,6 +206,7 @@
           <button type="button" class="btn ghost" id="salon-btn" aria-pressed="false">📺 Mode salon</button>
           <button type="button" class="btn ghost" id="guide-show">👋 Guide de démarrage</button>
           <button type="button" class="btn ghost" id="super-btn" hidden>🛡️ Super admin</button>
+          <button type="button" class="btn ghost" id="stats-btn" hidden>📊 Statistiques</button>
           <button type="button" class="btn ghost" id="logout">Se déconnecter</button>
         </div>
         <p class="hint">Le mode salon garde l'écran allumé, pour une tablette posée dans le salon. Il revient tout seul sur « Mes points » après 3 minutes sans toucher l'écran.</p>
@@ -303,9 +315,9 @@
 <div class="toast" id="toast" hidden></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
-<script src="i18n.js?v=2026-11-23a"></script>
-<script src="config.js?v=2026-11-23a"></script>
-<script src="characters.js?v=2026-11-23a"></script>
-<script src="app.js?v=2026-11-23a"></script>
+<script src="i18n.js?v=2026-11-23b"></script>
+<script src="config.js?v=2026-11-23b"></script>
+<script src="characters.js?v=2026-11-23b"></script>
+<script src="app.js?v=2026-11-23b"></script>
 </body>
 </html>

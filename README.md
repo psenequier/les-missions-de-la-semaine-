@@ -58,6 +58,19 @@ kofi: "https://ko-fi.com/monpseudo"
 
 Un bouton « 💛 Soutenir le site » apparaît alors dans l'onglet Administration (les parents seulement, jamais sur les pages des enfants). C'est un simple lien : aucun script de Ko-fi n'est chargé sur le site. Laisser `kofi: ""` cache le bouton.
 
+## Statistiques
+
+- **GoatCounter** (mesure d'audience sans cookie) : mettre l'adresse de comptage dans `config.js`
+  (`goatcounter: "https://moncode.goatcounter.com/count"`, ou `""` pour ne rien compter) et la même adresse,
+  sans `/count`, dans `img-src` de `index.html` (la CI vérifie que les deux correspondent).
+  Le site n'a aucun script de GoatCounter : il envoie une simple image avec le nom de la page vue
+  (`/mes-points`, `/catalogue`…). Jamais d'e-mail, de prénom, de nom de famille ni l'adresse complète de la page.
+  Les chiffres se lisent sur le tableau de bord GoatCounter.
+- **📊 Statistiques** (dans ⚙️ Administration, seulement pour le super admin) : comptes créés, familles inscrites,
+  familles avec au moins un enfant, familles qui ont donné des points cette semaine, et nouvelles inscriptions
+  des 30 derniers jours. Seulement des totaux, calculés par la base ; tout autre compte est refusé.
+  Pour une base déjà créée, lancer une fois `supabase/statistiques.sql`.
+
 ## Fichiers
 
 | Fichier | Rôle |
@@ -76,6 +89,7 @@ Un bouton « 💛 Soutenir le site » apparaît alors dans l'onglet Administrati
 | `supabase/une-fois-par-jour.sql` | chaque mission ne rapporte des points qu'une fois par jour, pour une base déjà créée |
 | `supabase/semaines-terminees.sql` | les points des semaines terminées ne changent plus, pour une base déjà créée |
 | `supabase/droits.sql` | ajoute les droits d'accès aux tables à une base déjà créée |
+| `supabase/statistiques.sql` | la page « Statistiques » du super admin, pour une base déjà créée |
 | `supabase/super-admin.sql` | ajoute le super admin à une base déjà créée |
 | `supabase/tests/` | tests de séparation des familles (lancés par la CI) |
 | `tests/ui/` | test des écrans avec un faux Supabase et des textes piégés |

@@ -57,6 +57,27 @@
     show("#don-card", true);
   }
 
+  // ───────── Mesure d'audience (GoatCounter, sans cookie) ─────────
+  // On compte les pages vues avec une simple image, sans script extérieur. Seul le nom de la page part
+  // (« /mes-points », « /catalogue »…) : jamais un prénom, une famille, une adresse e-mail ni l'adresse
+  // complète de la page (elle peut contenir un jeton de connexion après un lien reçu par e-mail).
+  const gcBrut = typeof CFG.goatcounter === "string" ? CFG.goatcounter.trim() : "";
+  // Rien n'est compté sur un ordinateur de développement (localhost).
+  const goatcounter = /^https:\/\/[a-z0-9-]{1,63}\.goatcounter\.com\/count$/.test(gcBrut) && location.hostname !== "localhost" ? gcBrut : "";
+  const PAGES = { auth: "connexion", recover: "mot-de-passe", onboard: "nouvelle-famille", super: "super-admin", stats: "statistiques",
+    points: "mes-points", shop: "catalogue", weeks: "semaines", admin: "administration" };
+  let pageComptee = "", premierePage = true;
+  function compter(nom) {
+    const page = "/" + (PAGES[nom] || "autre");
+    if (!goatcounter || page === pageComptee) return;
+    pageComptee = page;
+    const q = new URLSearchParams({ p: page, s: String(window.screen.width), rnd: Date.now().toString(36) });
+    // D'où vient le visiteur : seulement le site d'origine, jamais l'adresse complète.
+    if (premierePage && document.referrer && !document.referrer.startsWith(location.origin)) q.set("r", new URL(document.referrer).origin);
+    premierePage = false;
+    new Image().src = `${goatcounter}?${q}`;
+  }
+
   // ───────── État ─────────
   const S = {
     user: null, memberships: [], family: null, role: "member",
@@ -109,7 +130,8 @@
 
   // ───────── Écrans ─────────
   function screen(name) {
-    ["auth", "recover", "onboard", "app", "super"].forEach(n => show("#" + n, n === name));
+    ["auth", "recover", "onboard", "app", "super", "stats"].forEach(n => show("#" + n, n === name));
+    if (name !== "app") compter(name); // dans l'application, showView() compte l'onglet ouvert
     show("#who", !!S.user && name !== "auth");
     S.screen = name; showTopLogout();
   }
@@ -193,6 +215,7 @@
     const sup = await sb.rpc("is_super_admin");
     S.superAdmin = !sup.error && sup.data === true;
     show("#super-btn", S.superAdmin);
+    show("#stats-btn", S.superAdmin);
     await loadFamilies();
   }
 
@@ -293,6 +316,34 @@
   $("#super-list").addEventListener("click", e => { const b = e.target.closest("[data-visit]"); if (b) void visitFamily(b.dataset.visit); });
   $("#super-close").addEventListener("click", () => (S.family ? screen("app") : loadFamilies()));
   $("#visit-leave").addEventListener("click", () => loadFamilies());
+
+  // ───────── Statistiques du site (super admin) ─────────
+  // Calculées par la base (fonction usage_stats, refusée à tout autre compte) : seulement des totaux,
+  // aucun nom ni aucune donnée d'une famille.
+  async function openStats() {
+    if (!S.superAdmin) return;
+    screen("stats"); msg("#stats-err");
+    $("#stats-tiles").textContent = ""; $("#stats-days").textContent = "";
+    const { data, error } = await sb.rpc("usage_stats");
+    if (error || !data) return msg("#stats-err", t("Impossible de lire les statistiques. As-tu lancé supabase/statistiques.sql ?"));
+    const n = x => Number(x) || 0;
+    const tuiles = [
+      [n(data.comptes), t("comptes créés")],
+      [n(data.familles), t("familles inscrites")],
+      [n(data.familles_enfant), t("familles avec au moins un enfant")],
+      [n(data.familles_actives), t("familles qui ont donné des points cette semaine")]
+    ];
+    // eslint-disable-next-line no-unsanitized/property -- relu : nombres et textes du site seulement
+    $("#stats-tiles").innerHTML = tuiles.map(([v, l]) => `<div class="stat-tile"><b>${v}</b><span>${l}</span></div>`).join("");
+    const jours = (Array.isArray(data.jours) ? data.jours : []).filter(j => n(j.comptes) || n(j.familles));
+    const fmt = new Intl.DateTimeFormat(L.locale, { weekday: "short", day: "numeric", month: "short" });
+    const lignes = jours.map(j => `<tr><td>${esc(fmt.format(new Date(String(j.jour) + "T12:00:00")))}</td><td>${n(j.comptes)}</td><td>${n(j.familles)}</td></tr>`).join("");
+    // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou textes du site
+    $("#stats-days").innerHTML = `<thead><tr><th>${t("Jour")}</th><th>${t("Comptes")}</th><th>${t("Familles")}</th></tr></thead>
+      <tbody>${lignes || `<tr><td colspan="3">${t("Aucune inscription ces 30 derniers jours.")}</td></tr>`}</tbody>`;
+  }
+  $("#stats-btn").addEventListener("click", openStats);
+  $("#stats-close").addEventListener("click", () => (S.family ? screen("app") : loadFamilies()));
 
   $("#create-form").addEventListener("submit", async e => {
     e.preventDefault(); msg("#create-err");
@@ -946,6 +997,7 @@
     let v = VIEWS[location.hash] || "points";
     if (v === "admin" && !isAdmin()) v = "points";
     $$(".view").forEach(el => (el.hidden = el.dataset.view !== v));
+    if (S.screen === "app") compter(v);
     $$(".tab").forEach(t => t.setAttribute("aria-current", t.dataset.view === v ? "page" : "false"));
     show("#don-pill", !!kofi && v === "points"); // « Soutenir Basile » : seulement sur « Mes points »
     if (v === "admin" && S.family && !S.adminFilled) fillAdminForms();

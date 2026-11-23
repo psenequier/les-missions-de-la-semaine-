@@ -6,5 +6,8 @@ window.POINTS_CONFIG = {
   supabaseAnonKey: "sb_publishable_5INytJfCe2-MGApUsR8QCQ_SnelYsZp",
   // Page de dons Ko-fi, par exemple "https://ko-fi.com/monpseudo".
   // Laisser "" pour cacher le bouton « Soutenir le site ».
-  kofi: "https://ko-fi.com/mercibasile"
+  kofi: "https://ko-fi.com/mercibasile",
+  // Mesure d'audience GoatCounter (sans cookie), par exemple "https://monsite.goatcounter.com/count".
+  // Laisser "" pour ne rien compter. L'adresse doit aussi être dans img-src de index.html.
+  goatcounter: "https://mercibasile.goatcounter.com/count"
 };

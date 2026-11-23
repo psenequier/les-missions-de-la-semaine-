@@ -43,6 +43,12 @@ if (url && !url.startsWith("COLLER") && !(csp.includes(`https://${hote}`) && csp
 const kofi = (config.match(/kofi:\s*"([^"]*)"/) || [])[1] || "";
 if (kofi && !/^https:\/\/ko-fi\.com\/[A-Za-z0-9_]{1,64}\/?$/.test(kofi)) erreurs.push("config.js : le lien de dons doit être en https://ko-fi.com/<pseudo>");
 
+// Mesure d'audience GoatCounter (facultative) : une adresse goatcounter.com, autorisée en image par la CSP.
+const gc = (config.match(/goatcounter:\s*"([^"]*)"/) || [])[1] || "";
+const imgSrc = (readFileSync("index.html", "utf8").match(/img-src ([^;"]*)/) || [])[1] || "";
+if (gc && !/^https:\/\/[a-z0-9-]{1,63}\.goatcounter\.com\/count$/.test(gc)) erreurs.push("config.js : goatcounter doit être en https://<code>.goatcounter.com/count");
+else if (gc && !imgSrc.split(/\s+/).includes(new URL(gc).origin)) erreurs.push(`index.html : img-src doit autoriser ${new URL(gc).origin} (adresse GoatCounter de config.js)`);
+
 if (erreurs.length) {
   for (const e of erreurs) console.log(`::error title=Clé Supabase::${e}`);
   process.exit(1);
