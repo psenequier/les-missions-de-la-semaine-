@@ -34,6 +34,10 @@ const erreurs = [];
 p.on("pageerror", e => erreurs.push(e.message));
 p.on("console", m => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) erreurs.push(m.text()); });
 await p.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+// Mesure d'audience : les images GoatCounter sont interceptées (rien ne part sur Internet) et relevées.
+const comptages = [];
+const mesure = (page, liste) => page.route(u => u.hostname.endsWith(".goatcounter.com"), r => { if (liste) liste.push(new URL(r.request().url())); return r.fulfill({ status: 204 }); });
+await mesure(p, comptages);
 const attendre = ms => p.waitForTimeout(ms);
 const vue = async h => { await p.evaluate(x => (location.hash = x), h); await attendre(250); };
 
@@ -150,6 +154,16 @@ for (const h of ["#points", "#a-faire", "#catalogue", "#semaines", "#admin"]) aw
 await p.click("#visit-leave"); await attendre(500);
 verifier((await p.textContent("#title")) === "Famille Test" && await p.isHidden("#visit"), "retour à sa propre famille");
 
+// Statistiques du site (super admin) : des totaux seulement
+await vue("#admin");
+verifier(await p.isVisible("#stats-btn"), "le bouton « Statistiques » est dans l'administration du super admin");
+await p.click("#stats-btn"); await attendre(400);
+verifier(await p.isVisible("#stats") && await p.isHidden("#app") && await p.locator("#stats .stat-tile").count() === 4, "la page Statistiques affiche 4 chiffres");
+verifier((await p.textContent("#stats-tiles")).includes("14") && (await p.textContent("#stats-tiles")).includes("familles inscrites"), "comptes créés et familles inscrites s'affichent");
+verifier(await p.locator("#stats-days tbody tr").count() === 2, "seuls les jours avec des inscriptions sont listés");
+await p.click("#stats-close"); await attendre(300);
+verifier(await p.isVisible("#app"), "« Retour » ramène dans la famille");
+
 await vue("#admin");
 await p.click("#salon-btn"); await attendre(200);
 verifier(await p.evaluate(() => document.body.classList.contains("salon")), "le mode salon s'allume");
@@ -163,6 +177,7 @@ async function pageDon(lien) {
   const q = await navigateur.newPage({ viewport: { width: 1000, height: 1300 }, locale: "fr-FR" });
   await suivre(q);
   await q.route(u => ["fonts.googleapis.com", "fonts.gstatic.com"].includes(u.hostname), r => r.abort());
+  await mesure(q);
   await q.route(u => u.origin === new URL(U).origin && u.pathname === "/config.js", async r => {
     const corps = await readFile(join(racine, "config.js"), "utf8");
     await r.fulfill({ contentType: "text/javascript", body: corps.replace(/kofi:\s*"[^"]*"/, `kofi: ${JSON.stringify(lien)}`) });
@@ -218,6 +233,7 @@ const e = await ctxEn.newPage();
 const finE = await suivre(e);
 e.on("pageerror", x => erreurs.push(x.message));
 await e.route(u => ["fonts.googleapis.com", "fonts.gstatic.com"].includes(u.hostname), r => r.abort());
+await mesure(e);
 await e.goto(U); await e.waitForTimeout(300);
 verifier(await e.evaluate(() => document.documentElement.lang) === "en" && (await e.textContent("#auth-submit")).trim() === "Log in", "appareil en anglais : site en anglais par défaut");
 await e.fill("#auth-email", "parent@exemple.test"); await e.fill("#auth-password", "motdepasse"); await e.click("#auth-submit"); await e.waitForTimeout(400);
@@ -252,6 +268,15 @@ verifier(await e.evaluate(() => document.documentElement.lang) === "fr" && (awai
 await e.reload(); await e.waitForTimeout(600);
 verifier(await e.evaluate(() => document.documentElement.lang) === "fr" && await e.evaluate(() => localStorage.getItem("points-lang")) === "fr", "le choix de la langue reste sur l'appareil, même si l'appareil est en anglais");
 await finE(); await ctxEn.close();
+
+// GoatCounter : chaque page vue est comptée une fois, avec son nom seulement.
+const pagesComptees = comptages.map(u => u.searchParams.get("p"));
+verifier(["/connexion", "/nouvelle-famille", "/mes-points", "/catalogue", "/semaines", "/administration", "/super-admin", "/statistiques"].every(x => pagesComptees.includes(x)),
+  "GoatCounter compte les pages vues" + ` (${pagesComptees.join(", ")})`);
+verifier(pagesComptees.every((x, i) => x !== pagesComptees[i - 1]), "une page n'est pas comptée deux fois de suite");
+verifier(comptages.every(u => u.origin === "https://mercibasile.goatcounter.com" && u.pathname === "/count" && [...u.searchParams.keys()].every(k => ["p", "s", "rnd", "r"].includes(k))),
+  "GoatCounter reçoit seulement le nom de la page, la largeur de l'écran et un nombre au hasard");
+verifier(!comptages.some(u => /exemple|test|Enfant|Smiths|%40|@/i.test(u.search)), "ni e-mail, ni nom de famille, ni prénom n'est envoyé à GoatCounter");
 
 verifier(await p.evaluate(() => window.__xss) === undefined, "aucun texte piégé n'a exécuté de code");
 verifier(await p.locator("img").count() === 0, "aucune balise injectée dans la page");

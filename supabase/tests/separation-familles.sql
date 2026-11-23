@@ -72,6 +72,7 @@ select test.refuse(format('insert into events (family_id, child_id, points, labe
 -- Le super admin ne peut pas être obtenu depuis le site
 select test.refuse('select public.all_families()', 'un parent liste toutes les familles');
 select test.refuse('select count(*) from public.super_admins', 'un parent lit la liste des super admins');
+select test.refuse('select public.usage_stats()', 'un parent lit les statistiques du site');
 select test.refuse($$insert into public.super_admins values ('22222222-2222-2222-2222-222222222222')$$, 'un parent se déclare super admin');
 select test.egal((select public.is_super_admin()::int), 0, 'un parent n''est pas super admin');
 
@@ -81,6 +82,7 @@ select test.refuse('select count(*) from events', 'un visiteur lit les points');
 select test.refuse('select count(*) from families', 'un visiteur lit les familles');
 select test.refuse(format('select public.join_family(%L)', :'code'), 'un visiteur rejoint une famille');
 select test.refuse('select public.all_families()', 'un visiteur liste toutes les familles');
+select test.refuse('select public.usage_stats()', 'un visiteur lit les statistiques du site');
 select test.refuse('select public.create_family(''x'')', 'un visiteur crée une famille');
 
 -- Un adulte invité dans A est simple membre
@@ -99,6 +101,13 @@ insert into public.super_admins (user_id) values ('44444444-4444-4444-4444-44444
 set role authenticated; set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';
 select test.egal((select public.is_super_admin()::int), 1, 'le super admin est reconnu');
 select test.egal((select count(*) from public.all_families()), 2, 'le super admin liste les 2 familles');
+select test.egal((select (public.usage_stats()->>'comptes')::bigint), 4, 'statistiques : 4 comptes');
+select test.egal((select (public.usage_stats()->>'familles')::bigint), 2, 'statistiques : 2 familles inscrites');
+select test.egal((select (public.usage_stats()->>'familles_enfant')::bigint), 2, 'statistiques : 2 familles avec un enfant');
+select test.egal((select (public.usage_stats()->>'familles_actives')::bigint), 1, 'statistiques : 1 famille a donné des points cette semaine');
+select test.egal((select jsonb_array_length(public.usage_stats()->'jours')), 30, 'statistiques : les 30 derniers jours');
+select test.egal((select (public.usage_stats()->'jours'->0->>'familles')::bigint), 2, 'statistiques : 2 familles créées aujourd''hui');
+select test.egal((select count(*) from jsonb_object_keys(public.usage_stats())), 5, 'statistiques : seulement des totaux, aucun nom de famille');
 select test.egal((select count(*) from events where family_id = :'fa'), 2, 'le super admin voit les points de A');
 insert into children (family_id, name) values (:'fb', 'Ajout super admin');
 select test.egal((select count(*) from children where family_id = :'fb'), 2, 'le super admin gère la famille B');
