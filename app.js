@@ -762,6 +762,7 @@
   function renderAdminLists() {
     renderReport();
     $("#invite-code").textContent = S.family.invite_code || "";
+    show("#print-row", S.children.length > 0);
     // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
     $("#admin-kids").innerHTML = S.children.length ? S.children.map(k => { const c = charOf(k), delKey = "delkid|" + k.id;
       return `<div class="akid" data-style="${kidStyle(k)}"><span class="avatar" aria-hidden="true">${c.icon}</span><div class="grow"><b>${esc(k.name)}</b><small>${esc(c.name)}</small></div>
@@ -778,6 +779,45 @@
     $("#reset-btn").textContent = t(S.resetArmed ? "Sûr ? Les points de cette semaine seront effacés" : "Remettre la semaine à zéro");
     $("#reset-btn").classList.toggle("confirm", S.resetArmed);
   }
+  // ───────── Imprimer les missions : une page A4 par enfant, à afficher dans sa chambre ─────────
+  // Une grille à cocher du lundi au dimanche (missions du matin, du soir et autres missions), les points de chaque
+  // mission et les récompenses qu'il peut s'offrir. Seules ces feuilles sortent à l'impression (voir style.css).
+  function printSheets() {
+    const st = settings(), days = DAYN.map(d => `<th class="ps-day">${esc(d)}</th>`).join("");
+    const boxes = `<td class="ps-box"></td>`.repeat(7);
+    const section = (icon, title, note) => `<tr class="ps-sec"><th colspan="9"><span aria-hidden="true">${esc(icon)}</span> ${esc(title)}${note ? ` <small>${note}</small>` : ""}</th></tr>`;
+    const row = (label, pts) => `<tr><td class="ps-lbl">${esc(label)}</td><td class="ps-pts">${pts}</td>${boxes}</tr>`;
+    const routine = part => {
+      const r = st.routines[part], items = (r.items || []).filter(Boolean);
+      if (!items.length) return "";
+      return section(r.icon, shown(r.label), t("{n} points quand tout est fait", { n: r.points })) + items.map(i => row(shown(i), "")).join("");
+    };
+    return S.children.map(k => {
+      const c = charOf(k);
+      const rewards = byCost().filter(r => !r.child_ids || !r.child_ids.length || r.child_ids.includes(k.id));
+      return `<article class="sheet" data-style="${kidStyle(k)}">
+        <header class="ps-head"><span class="ps-avatar" aria-hidden="true">${c.icon}</span>
+          <div><h1>${t("Les missions de {name}", { name: esc(k.name) })}</h1><p>${t("Semaine du ........ au ........")}</p></div></header>
+        <table class="ps-grid"><thead><tr><th class="ps-lbl">${t("Mission")}</th><th class="ps-pts">${t("Points")}</th>${days}</tr></thead>
+          <tbody>${routine("matin")}${routine("soir")}
+          ${st.tasks.length ? section("⭐", t("Autres missions")) + st.tasks.map(x => row(`${x.icon} ${shown(x.label)}`, "+" + x.points)).join("") : ""}</tbody></table>
+        <p class="ps-tip">${t("Coche la case du jour quand c'est fait. Chaque mission compte une fois par jour.")}</p>
+        <div class="ps-foot">
+          <div class="ps-total">${t("Mes points de la semaine :")} <span class="ps-blank"></span></div>
+          ${rewards.length ? `<div class="ps-rewards"><b>${t("Ce que je peux m'offrir")}</b><ul>${rewards.map(r => `<li><span aria-hidden="true">${esc(r.icon)}</span> ${esc(shown(r.title))} : <b>${t("{n} points", { n: costOf(r) })}</b></li>`).join("")}</ul></div>` : ""}
+        </div>
+      </article>`;
+    }).join("");
+  }
+  $("#print-btn").addEventListener("click", () => {
+    if (!S.children.length) return;
+    // eslint-disable-next-line no-unsanitized/property -- relu : texte échappé par esc(), nombres, ou catalogue du site
+    $("#print-sheets").innerHTML = printSheets();
+    applyStyles($("#print-sheets")); // couleurs de chaque enfant posées tout de suite, avant l'impression
+    document.body.classList.add("printing");
+    window.print();
+  });
+  window.addEventListener("afterprint", () => document.body.classList.remove("printing"));
   function fillAdminForms() {
     const st = settings();
     $("#fam-name").value = S.family.name;
